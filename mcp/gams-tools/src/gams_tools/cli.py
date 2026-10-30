@@ -31,8 +31,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("compile", help="compile an entry point (action=c)")
-    p.add_argument("entry")
+    p.add_argument("entry", nargs="?", help="entry point from .gams-agent.yaml (omit with --all)")
+    p.add_argument("--all", action="store_true", help="compile every entry point")
     p.add_argument("--define", "-D", action="append", help="extra --key=value define, as key=value")
+    p.add_argument("--format", choices=["json", "gnu"], default="json", help="gnu: file:line:col: error CODE: message")
 
     p = sub.add_parser("run", help="run an allowlisted test case")
     p.add_argument("case")
@@ -129,8 +131,23 @@ def main(argv: list[str] | None = None) -> int:
             _print(report)
         return 0 if report["ok"] else 1
 
+    if args.cmd == "compile":
+        entries = [ep.path for ep in cfg.entry_points] if args.all else [args.entry]
+        if not entries or entries == [None]:
+            print("error: give an entry point or --all", file=sys.stderr)
+            return 2
+        results = [service.compile_entry(cfg, e, _defines(args.define)) for e in entries]
+        if args.format == "gnu":
+            for r in results:
+                for e in r.get("errors", []):
+                    print(f"{e.get('file') or r['entry']}:{e.get('line') or 1}:{e.get('column') or 1}: error {e.get('code')}: {e.get('message')}")
+                if r.get("error"):
+                    print(f"{r.get('entry', '?')}:1:1: error 0: {r['error']}")
+        else:
+            _print(results[0] if len(results) == 1 else results)
+        return 0 if all(r.get("ok") for r in results) else 1
+
     dispatch = {
-        "compile": lambda: service.compile_entry(cfg, args.entry, _defines(args.define)),
         "run": lambda: service.run_case(cfg, args.case),
         "listing": lambda: service.listing_summary(cfg, args.path),
         "log": lambda: service.log_summary(cfg, args.path),

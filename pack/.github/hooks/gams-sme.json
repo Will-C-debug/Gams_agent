@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "gams-tools hook session-start",
+        "bash": "gams-tools hook session-start",
+        "powershell": "gams-tools hook session-start",
+        "timeout": 60,
+        "timeoutSec": 60
+      }
+    ],
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "gams-tools hook pre-tool-use",
+        "bash": "gams-tools hook pre-tool-use",
+        "powershell": "gams-tools hook pre-tool-use",
+        "timeout": 15,
+        "timeoutSec": 15
+      }
+    ],
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "gams-tools hook post-tool-use",
+        "bash": "gams-tools hook post-tool-use",
+        "powershell": "gams-tools hook post-tool-use",
+        "timeout": 180,
+        "timeoutSec": 180
+      }
+    ]
+  }
+}

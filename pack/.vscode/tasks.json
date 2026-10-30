@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "GAMS: compile all entry points",
+      "type": "shell",
+      "command": "gams-tools compile --all --format gnu",
+      "group": "build",
+      "presentation": { "reveal": "silent", "clear": true },
+      "problemMatcher": {
+        "owner": "gams",
+        "source": "gams",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+?):(\\d+):(\\d+):\\s+(error|warning)\\s+(\\d+):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "code": 5,
+          "message": 6
+        }
+      }
+    },
+    {
+      "label": "GAMS: run checks (compile, options, regression cases)",
+      "type": "shell",
+      "command": "gams-tools check",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}

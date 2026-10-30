@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Will-C-debug/Gams_agent/pack/.github/gams-agent.schema.json",
+  "title": ".gams-agent.yaml",
+  "description": "Per-repository configuration for the gams-sme agent and gams-tools.",
+  "type": "object",
+  "required": ["gams"],
+  "additionalProperties": false,
+  "properties": {
+    "gams": {
+      "type": "object",
+      "required": ["version"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "string", "description": "Pinned GAMS release: \"53\" matches any 53.x.y; \"53.5.1\" matches exactly.", "pattern": "^\\d+(\\.\\d+){0,2}$" },
+        "cplex_version": { "type": "string", "description": "CPLEX library bundled with the pinned GAMS build (e.g. 22.1.2 for GAMS 53.5.1)." },
+        "sysdir": { "type": "string", "description": "GAMS system directory. Optional; otherwise GAMS_SYSDIR or gams on PATH." },
+        "exec_mode": { "type": "integer", "minimum": 0, "maximum": 4, "default": 2, "description": "GAMS execMode for agent-triggered runs. 2 blocks $call, execute and embedded code." }
+      }
+    },
+    "limits": { "$ref": "#/$defs/limits", "description": "Caps for every agent-triggered GAMS run." },
+    "entry_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string" },
+          "defines": { "$ref": "#/$defs/defines" },
+          "workdir": { "type": "string", "description": "Working directory relative to the repo root; default is the entry file's folder." }
+        }
+      }
+    },
+    "test_cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "entry"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+          "entry": { "type": "string" },
+          "defines": { "$ref": "#/$defs/defines" },
+          "baseline_gdx": { "type": "string" },
+          "tolerance": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "rel": { "type": "number", "minimum": 0 }, "abs": { "type": "number", "minimum": 0 } }
+          },
+          "symbols": { "type": "array", "items": { "type": "string" }, "description": "Symbols to compare with the baseline (default: all)." },
+          "limits": { "$ref": "#/$defs/limits" }
+        }
+      }
+    },
+    "protected_paths": { "type": "array", "items": { "type": "string" }, "description": "Globs the agent must never read or pass to GAMS, e.g. data/prod/**." },
+    "option_files": { "type": "array", "items": { "type": "string" } },
+    "docs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "dirs": { "type": "array", "items": { "type": "string" } } }
+    },
+    "atlassian": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "jira_projects": { "type": "array", "items": { "type": "string" } },
+        "issue_key_pattern": { "type": "string" },
+        "confluence_spaces": { "type": "array", "items": { "type": "string" } },
+        "spec_labels": { "type": "array", "items": { "type": "string" } },
+        "runbook_labels": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "defines": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean"] } },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reslim": { "type": "number", "exclusiveMinimum": 0 },
+        "threads": { "type": "integer", "minimum": 1 },
+        "wallclock": { "type": "number", "exclusiveMinimum": 0 },
+        "max_output_chars": { "type": "integer", "minimum": 1000 }
+      }
+    }
+  }
+}

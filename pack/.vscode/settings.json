@@ -1,0 +1,9 @@
+{
+  "yaml.schemas": {
+    "./.github/gams-agent.schema.json": ".gams-agent.yaml"
+  },
+  "files.associations": {
+    "*.gms": "gams",
+    "*.inc": "gams"
+  }
+}
