@@ -2,13 +2,16 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review, revision 2 |
+| **Status** | Draft for review, revision 3 |
 | **Date** | 2026-10-30 |
 | **Platform** | VS Code + GitHub Copilot, with Jira and Confluence as context sources |
+| **GAMS release** | GAMS 53 in production. The exact 53.x build and bundled CPLEX version are confirmed in Phase 0 (§9, Version pin). |
 | **Audience** | Optimization SMEs, GAMS developers, engineering leads, security/IT and Atlassian admins |
 | **Owner** | _TBD_ |
 
 > **Revision 2** moves the plan from a Claude Code plugin to GitHub Copilot's native customization files (instructions, skills, custom agents, prompt files, hooks), MCP servers in VS Code, Copilot code review and Copilot cloud agent. It also adds Jira and Confluence as context sources (§8).
+>
+> **Revision 3** pins the agent to **GAMS 53**: its docs index, option validation, sandbox image and evals (§9, Version pin).
 
 ---
 
@@ -25,7 +28,7 @@ We will build **`gams-sme`**, a GAMS and CPLEX subject-matter expert that runs i
 Recommended shape:
 
 1. **A Copilot customization pack.** It holds custom instructions, agent skills, custom agents, prompt files (slash commands) and hooks. The pack is maintained in this repository and synced into every GAMS repository. VS Code, Copilot cloud agent and Copilot code review all read these repository-level files, so one pack serves all three.
-2. **A `gams-tools` MCP server, plus a CLI from the same package.** It gives Copilot structured access to a real GAMS/CPLEX installation:
+2. **A `gams-tools` MCP server, plus a CLI from the same package.** It gives Copilot structured access to a real GAMS 53 / CPLEX installation:
    - compile entry points
    - run allowlisted test cases
    - summarize listing and log files
@@ -93,7 +96,9 @@ We will deliver in phases over roughly **14–18 weeks to general availability**
 
 ## 4. Key assumptions
 
-We will confirm these in Phase 0. Each maps to an open question in §15.
+**Confirmed:** production uses **GAMS 53** (§9, Version pin).
+
+We will confirm the assumptions below in Phase 0. Each maps to an open question in §15.
 
 | # | Assumption |
 |---|---|
@@ -164,7 +169,7 @@ Build on GitHub Copilot's native, file-based customization, plus two MCP servers
 | Per-repo config | Entry points, test cases, protected paths, GAMS version, Jira/Confluence scope | `.gams-agent.yaml` in each GAMS repo |
 | `gams-checks` | Deterministic CI gate (no AI) | Reusable workflow in this repo, called from GAMS repos |
 | Cloud-agent environment | Pinned GAMS + `gams-tools` on the agent's runner | `copilot-setup-steps.yml` template |
-| Sandbox image | Pinned GAMS + CPLEX for CI, evals and optional local container runs | `sandbox/` (Dockerfile); license mounted at runtime |
+| Sandbox image | GAMS 53 (pinned build) + CPLEX for CI, evals and optional local container runs | `sandbox/` (Dockerfile); license mounted at runtime |
 | Eval harness | Quality gate for every pack, tool or model change | `evals/` in this repo |
 
 ### 5.3 Alternatives considered
@@ -207,7 +212,7 @@ These go into `copilot-instructions.md` and the agents. Hooks, CI and evals enfo
 4. **Separate the layers.** Formulation (math), implementation (GAMS code), data and solver-configuration findings stay distinct, because each has a different owner and fix.
 5. **SMEs own intent.** When the intended behavior is unclear, the agent asks or states its assumption. It never silently "fixes" a formulation to match a guess.
 6. **Minimal, conventional diffs.** Follow the internal standards and the existing style of the file. No drive-by refactors inside feature changes.
-7. **Version awareness.** State which GAMS/CPLEX release is assumed, and flag behavior that differs across releases.
+7. **Version awareness.** Assume GAMS 53 and the CPLEX it bundles unless `.gams-agent.yaml` says otherwise. Flag anything that needs a newer release (such as GAMS 54) as "requires upgrade", and flag constructs that GAMS 53 has removed or deprecated.
 8. **Respect boundaries.** The agent never:
    - reads protected data paths
    - runs GAMS outside `gams-tools`
@@ -265,6 +270,7 @@ Severities:
 - **Reading output.** Listing-file anatomy.
 - **Performance and debugging.** Execution profiling and reference files.
 - **Python tooling.** GAMSPy and the GAMS Python API, if used internally (Q3).
+- **Release specifics.** What changed up to GAMS 53, and what is only available in later releases (§9, Version pin).
 
 **CPLEX through GAMS**
 
@@ -313,8 +319,8 @@ We use the `excludeAgent` frontmatter (`code-review` / `coding-agent`) where gui
 
 | Skill | Contents | Primary sources |
 |---|---|---|
-| `gams-language` | Semantics and pitfalls, in reference files by topic | Version-pinned GAMS docs + SME review |
-| `cplex-via-gams` | Option files, options by purpose, status codes, logs, infeasibility workflow, numerics, tuning | GAMS/CPLEX solver manual + CPLEX parameter reference for the bundled version |
+| `gams-language` | Semantics and pitfalls, in reference files by topic, plus a "changes up to GAMS 53" reference | GAMS 53 documentation and release notes + SME review |
+| `cplex-via-gams` | Option files, options by purpose, status codes, logs, infeasibility workflow, numerics, tuning | GAMS 53 CPLEX solver manual + CPLEX parameter reference for the CPLEX version bundled with GAMS 53 |
 | `gams-review` | Review procedure, checklist (Appendix A), severities, output contract (§6.2) | This plan + Phase 0 defect taxonomy |
 | `org-gams-standards` | Internal conventions, model catalog, glossary, approved option-file patterns | Snapshot of the Confluence standards space (§9); owned by the SME council |
 | `gams-testing` | Regression-test pattern: small datasets, golden GDX, tolerance diff, CI wiring | Built in Phase 2 |
@@ -439,7 +445,8 @@ These become slash commands in Copilot Chat.
 
 ```yaml
 gams:
-  version: "<pinned release>"        # must match production
+  version: "53"                      # production major release; pin the exact 53.x.y build in Phase 0
+  cplex_version: "<from the GAMS 53 CPLEX log header>"
 entry_points:
   - path: models/dispatch/main.gms
     defines: { scenario: base, horizon: 24 }
@@ -477,7 +484,7 @@ atlassian:
    - **Status:** its comments are never a merge gate.
 3. **Humans approve.** Branch protection and CODEOWNERS (SMEs for model code) stay unchanged.
 4. **Copilot cloud agent (optional, Phase 5).**
-   - **Environment:** `copilot-setup-steps.yml` installs the pinned GAMS release from our internal artifact store and `gams-tools`. The GAMS license comes from a secret in the repository's `copilot` environment.
+   - **Environment:** `copilot-setup-steps.yml` installs the pinned GAMS 53 build from our internal artifact store and `gams-tools`. The GAMS license comes from a secret in the repository's `copilot` environment.
    - **Network:** the agent firewall allowlist includes only the hosts it needs.
    - **Scope:** start with low-risk work (tests, documentation, refactors proven by GDX diff), assigned from GitHub issues or from Jira (§8.2).
    - **Review:** every PR it opens goes through the same gate and review.
@@ -534,10 +541,33 @@ Option (b) is preferred if the security review rejects third-party servers. In t
 
 ### External sources (version-pinned)
 
-- **GAMS documentation** for our production release(s): language reference, dollar control options, the CPLEX solver manual, GDX / Connect / Transfer, and GAMSPy if used.
-- **CPLEX parameter reference** for the CPLEX version bundled with that GAMS release.
+- **GAMS 53 documentation** (GAMS publishes a documentation set per major release): language reference, dollar control options, the CPLEX solver manual, GDX / Connect / Transfer, GAMSPy if used, and the release notes.
+- **CPLEX parameter reference** for the CPLEX version bundled with GAMS 53.
 - **GAMS Model Library**, as public examples.
 - **Licensing check:** confirm the documentation license terms before mirroring it internally.
+
+### Version pin: GAMS 53
+
+Production runs **GAMS 53**. The 53 series started with major release 53.1.0 in February 2026, and GAMS 54 has shipped since then.
+
+What the pin means for the agent:
+
+- **Docs:** the `docs_search` index is built from the GAMS 53 documentation set, including its CPLEX solver manual.
+- **Options:** `option_validate` reads the option definitions shipped in the GAMS 53 system directory, so it accepts exactly what 53 accepts.
+- **CPLEX version:** the CPLEX library version bundled with our 53.x build goes into `.gams-agent.yaml`. We read it from the CPLEX log header or the 53 release notes, and use it to pick the matching CPLEX parameter reference.
+- **No newer features by accident:** the agent flags anything that needs GAMS 54 or later as "requires upgrade" instead of suggesting it as-is. The Q&A evals include version-boundary questions to test this (§11).
+- **Earlier changes the agent must know.** These come from the GAMS 51 release notes; we review the full 51–53 notes in Phase 0 and add the findings to the `gams-language` skill.
+  - `=C=` equations trigger an error since 51, so older conic code must be rewritten.
+  - License files must use the newer 8-line format since 51. This matters for the license secret on CI and cloud-agent runners.
+  - GAMS 51 announced that Windows 10 and macOS 13 support would end with the next major release. Developer machines must meet GAMS 53's platform requirements (Q10).
+- **Side-by-side installs:** GAMS Studio 53 can switch between GAMS system directories, which helps anyone testing GAMS 54 alongside 53. The SessionStart hook and `gams-tools` always use the version in `.gams-agent.yaml`.
+- **Upgrading to 54 later:**
+  1. Bump `.gams-agent.yaml` through a PR.
+  2. Rebuild the docs index from the GAMS 54 docs.
+  3. Update the sandbox image and `copilot-setup-steps.yml`.
+  4. Re-validate all approved option files.
+  5. Read the 54 release notes into the `gams-language` skill.
+  6. Rerun the full eval suite before the new pack version ships.
 
 ### Internal sources: Confluence as the authoring home
 
@@ -563,7 +593,7 @@ Option (b) is preferred if the security review rejects third-party servers. In t
 - **Local execution.** See §7.6: allowlisted test cases, limits enforced by the tool, user confirmation for runs, and the container where available.
 - **Atlassian.** See §8.4: per-user OAuth in VS Code, a read-only scoped service account for unattended use only if approved, and no write tools.
 - **Secrets.** The GAMS license is stored as a secret in the Actions / `copilot` environment. The Atlassian service-account token is added only if approved. Nothing else is stored.
-- **Licensing.** Confirm that GAMS/CPLEX license terms allow use on CI and cloud-agent runners, and how many runs may happen at once.
+- **Licensing.** Confirm that GAMS/CPLEX license terms allow use on CI and cloud-agent runners, and how many runs may happen at once. The license secret must be in the 8-line format that GAMS 51 and later require.
 - **Untrusted input.** PR content, Jira tickets and Confluence pages are all untrusted. Review surfaces are read-only and cannot approve or merge.
 - **Audit.** We keep `gams-tools` invocation logs and use Copilot's org audit and usage data and the Atlassian audit logs.
 
@@ -580,7 +610,7 @@ Option (b) is preferred if the security review rejects third-party servers. In t
 | **Coding tasks** | 15–25 Jira-style tasks with acceptance criteria and a Confluence-style spec | Compiles; regression passes; acceptance criteria met; rubric review by an SME |
 | **Diagnosis tasks** | 10–20 broken runs with a known root cause, some with a matching past Jira issue | Root cause identified; fix verified by rerun; relevant past issue cited |
 | **Context tasks** | 10–15 tasks that need Jira or Confluence, including stale pages, conflicts, and pages with **planted instructions** | Traceability correct; citations accurate; conflicts flagged; planted instructions ignored |
-| **Knowledge Q&A** | 75–100 GAMS/CPLEX questions with answers written by SMEs | Rubric (LLM judge calibrated on an SME-graded subset); every option name and value checked automatically |
+| **Knowledge Q&A** | 75–100 GAMS 53 / CPLEX questions with answers written by SMEs, including version-boundary questions (features removed by 53, or only in 54+) | Rubric (LLM judge calibrated on an SME-graded subset); every option name and value checked automatically |
 
 Eval Jira and Confluence content lives in a **dedicated sandbox Jira project and Confluence space** (or fixtures served by a stub MCP server), never in production projects.
 
@@ -599,7 +629,8 @@ These are proposals that leadership and the SME council agree on in Phase 0.
 |---|---|
 | Recall on seeded Blocker/Major defects | ≥ 80% |
 | Precision of findings (SME-rated valid) | ≥ 80% |
-| Option names and values valid for the pinned release | 100% |
+| Option names and values valid for GAMS 53 | 100% |
+| Features beyond GAMS 53 suggested without an upgrade flag | 0 |
 | Agent-written code that compiles | ≥ 95% |
 | Coding tasks passing regression and acceptance criteria | ≥ 85% |
 | Diagnosis tasks with the correct root cause | ≥ 75% |
@@ -619,8 +650,8 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 
 | Phase | Duration | Deliverables | Exit criteria |
 |---|---|---|---|
-| **0. Discovery and decisions** | ~2 weeks | Inventory of GAMS repos, entry points, GAMS/CPLEX versions, OS mix and licenses; **audit of Copilot plan and policies** (MCP, custom agents/skills, code review, cloud agent, hooks/plugins previews, models); **Atlassian check** (Cloud vs. Data Center, Rovo, admin approval, service account); Jira/Confluence conventions (§8.3); interviews; defect taxonomy; data classification | Scope, version matrix, data policy, Atlassian access path, conventions and success metrics signed off; answers to the open questions in §15 |
-| **1. Pack MVP** | ~3 weeks | `copilot-instructions.md` + path instructions; skills `gams-language`, `cplex-via-gams`, `gams-review`, `org-gams-standards` v0 (first Confluence snapshot); prompts `/gams-review`, `/gams-explain`; VS Code tasks and problem matcher; `.gams-agent.yaml` schema; pack sync to pilot repos; Atlassian MCP (read-only) configured for pilot users | Pilot users run local reviews in VS Code with Jira acceptance criteria pulled in; eval baseline v0 recorded |
+| **0. Discovery and decisions** | ~2 weeks | Inventory of GAMS repos and entry points; **confirm the exact GAMS 53.x build, its bundled CPLEX version, and any teams on other releases**; review of the GAMS 51–53 release notes; OS mix and licenses; **audit of Copilot plan and policies** (MCP, custom agents/skills, code review, cloud agent, hooks/plugins previews, models); **Atlassian check** (Cloud vs. Data Center, Rovo, admin approval, service account); Jira/Confluence conventions (§8.3); interviews; defect taxonomy; data classification | Scope, version matrix, data policy, Atlassian access path, conventions and success metrics signed off; answers to the open questions in §15 |
+| **1. Pack MVP** | ~3 weeks | `copilot-instructions.md` + path instructions; skills `gams-language` and `cplex-via-gams` (built from the GAMS 53 docs), `gams-review`, `org-gams-standards` v0 (first Confluence snapshot); prompts `/gams-review`, `/gams-explain`; VS Code tasks and problem matcher; `.gams-agent.yaml` schema; pack sync to pilot repos; Atlassian MCP (read-only) configured for pilot users | Pilot users run local reviews in VS Code with Jira acceptance criteria pulled in; eval baseline v0 recorded |
 | **2. Tooling and context** | ~4 weeks (+1–2 if §8.5 option b) | `gams-tools` MCP + CLI and sandbox image; five custom agents with tool allowlists; hooks (where enabled); `/gams-implement`, `/gams-diagnose`, `/cplex-tune`, `/gams-test`, `/gams-doc`; skills `gams-testing`, `formulation-docs`, `atlassian-context` | Tool tests pass; measurable eval gain over v0 on coding, diagnosis and context sets |
 | **3. Evaluation harness** | Starts in Phase 1, then continuous | All six eval sets; Copilot CLI runner; code-review eval repo; sandbox Jira project and Confluence space; CI gating in this repo | GA targets measured on every release |
 | **4. GitHub review integration** | ~2–3 weeks | Reusable `gams-checks`; Copilot code review rulesets and repository MCP settings; review-specific instructions tuned under the character limit; shadow period on the eval repo + one pilot repo | Code-review precision ≥ target over at least 20 PRs; `gams-checks` required on pilot repos |
@@ -658,7 +689,8 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| **Wrong GAMS/CPLEX facts.** Option names and defaults change across releases. | Bad advice, loss of trust | `option_validate`; version-pinned docs; "verified by" field; Q&A evals with automatic option checks |
+| **Wrong GAMS/CPLEX facts.** Option names and defaults change across releases. | Bad advice, loss of trust | `option_validate` against GAMS 53's option definitions; GAMS 53 docs index; "verified by" field; Q&A evals with automatic option checks |
+| **GAMS version drift.** GAMS 54 is already out, and new major releases ship several times a year. | Agent suggests features we don't have, or misses behavior changes on upgrade | Version-boundary evals; "requires upgrade" flag; upgrade checklist (§9, Version pin); SessionStart version check |
 | **Plausible but wrong formulation critiques** | SMEs lose trust | Evidence and confidence required; shadow period; precision tracked; SMEs stay approvers |
 | **Copilot features keep changing.** Hooks and plugins are in preview; file locations and tool names change. | Breakage, rework | Nothing depends solely on preview features; CI gate as backstop; pack version pinned per repo; build-time check against the docs |
 | **Copilot code review limits** (instruction-length cap, its own comment format) | Shallow or noisy reviews | Concise review instructions; depth in skills; full contract via `/gams-review`; tuning in the shadow period; reviews are advisory |
@@ -677,9 +709,9 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 
 ### GAMS and CPLEX
 
-1. **Q1:** Which GAMS and CPLEX releases are in production? Do several run at once across teams?
+1. **Q1:** GAMS 53 is confirmed. Which exact 53.x.y build is in production, and which CPLEX library version does it bundle? Does any team run a different release, and is there a timeline for moving to GAMS 54?
 2. **Q2:** Is CPLEX used only through GAMS, or also directly (OPL, docplex, CPLEX APIs)? Is direct use in scope for v1?
-3. **Q3:** Do any teams use GAMSPy, the GAMS Python API, GAMS MIRO or GAMS Engine?
+3. **Q3:** Do any teams use GAMSPy, the GAMS Python API, GAMS MIRO or GAMS Engine? If so, which versions, and do they line up with GAMS 53?
 
 ### GitHub Copilot
 
@@ -704,7 +736,7 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 ### Data, tooling and success measures
 
 9. **Q9:** What data classification applies to model code, input data and Jira/Confluence content sent to Copilot?
-10. **Q10:** What operating systems do SMEs and developers use? Is GAMS installed locally for all of them, and is Docker or WSL available?
+10. **Q10:** What operating systems do SMEs and developers use, and do they all meet GAMS 53's platform requirements? Is GAMS 53 installed locally for all of them, and is Docker or WSL available?
 11. **Q11:** Can GAMS be installed on GitHub-hosted runners (license and download access), or do we need self-hosted runners?
 12. **Q12:** Do written internal GAMS standards exist, in Confluence or elsewhere, and who owns them?
 13. **Q13:** Are there representative small datasets we can use freely, or must we build synthetic ones?
@@ -760,6 +792,7 @@ This is a starting point for the `gams-review` skill. The SME council validates 
 - [ ] Compile-time switches (`--name=value`, `$setGlobal`) have defaults (`$if not set`) and are documented.
 - [ ] There are no unused or undefined symbols (checked with the reference file).
 - [ ] Redefinition switches such as `$onMulti` are justified.
+- [ ] No constructs that GAMS 53 has removed or deprecated (e.g., `=C=` equations), and no features that need a newer release.
 - [ ] Include structure and naming follow the internal standards.
 
 ### A.7 Security and operations
@@ -839,6 +872,12 @@ Gams_agent/
 ## Appendix C: References
 
 Verify these at build time; Copilot and VS Code customization features change often.
+
+**GAMS**
+- [GAMS 53 documentation](https://www.gams.com/53/docs/)
+- [GAMS 53 release notes](https://www.gams.com/54/docs/RN_53.html)
+- [GAMS 51 release notes (`=C=` removal, 8-line license format)](https://gams.com/53/docs/RN_51.html)
+- [Release notes index](https://www.gams.com/latest/docs/RN_MAIN.html)
 
 **VS Code**
 - [Customization concepts](https://code.visualstudio.com/docs/agents/concepts/customization)
