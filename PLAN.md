@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review, revision 3 |
+| **Status** | Draft for review, revision 4 |
 | **Date** | 2026-10-30 |
 | **Platform** | VS Code + GitHub Copilot, with Jira and Confluence as context sources |
 | **GAMS release** | GAMS 53 in production. The exact 53.x build and bundled CPLEX version are confirmed in Phase 0 (§9, Version pin). |
@@ -12,6 +12,8 @@
 > **Revision 2** moves the plan from a Claude Code plugin to GitHub Copilot's native customization files (instructions, skills, custom agents, prompt files, hooks), MCP servers in VS Code, Copilot code review and Copilot cloud agent. It also adds Jira and Confluence as context sources (§8).
 >
 > **Revision 3** pins the agent to **GAMS 53**: its docs index, option validation, sandbox image and evals (§9, Version pin).
+>
+> **Revision 4** records three confirmations: Jira and Confluence are **Atlassian Cloud**, a **read-only Atlassian service account** can be approved, and **every Copilot feature this plan uses can be enabled**. The Data Center fallback is gone, the service account is part of the core design (§8.2), and the resolved questions are listed in §15.
 
 ---
 
@@ -36,7 +38,7 @@ Recommended shape:
    - validate CPLEX options
 
    This way answers are checked against the toolchain, not recalled from memory.
-3. **The Atlassian Rovo MCP server.** It gives read-only access to Jira issues and Confluence pages, under each user's own Atlassian permissions.
+3. **The Atlassian Rovo MCP server.** It gives read-only access to Jira issues and Confluence pages. In VS Code, each user signs in with their own Atlassian permissions. Copilot code review, the cloud agent and evals use a read-only service account.
 4. **PR review on GitHub.** A deterministic `gams-checks` workflow is the hard merge gate. Copilot code review, guided by the pack, adds advisory review comments. Humans remain the approvers.
 5. **An evaluation harness.** It runs the pack through Copilot CLI and a seeded-defect PR repository, gates every change to the pack, and tracks quality over time.
 
@@ -96,18 +98,25 @@ We will deliver in phases over roughly **14–18 weeks to general availability**
 
 ## 4. Key assumptions
 
-**Confirmed:** production uses **GAMS 53** (§9, Version pin).
+### Confirmed (2026-10-30)
 
-We will confirm the assumptions below in Phase 0. Each maps to an open question in §15.
+| # | Fact |
+|---|---|
+| C1 | Production uses **GAMS 53** (§9, Version pin). |
+| C2 | SMEs and developers use **VS Code with GitHub Copilot**. |
+| C3 | **Every Copilot feature this plan uses can be enabled**: MCP servers (restricted to approved ones), custom agents, skills and prompt files, Copilot code review, Copilot cloud agent, hooks and agent plugins (both in preview), model selection, and content exclusions. |
+| C4 | **Jira and Confluence are Atlassian Cloud**, so the Rovo MCP server applies and no Data Center fallback is needed. |
+| C5 | The Atlassian admin can approve a **read-only service account** for unattended access (§8.2). |
+
+### Assumptions still to confirm in Phase 0
+
+Each maps to an open question in §15.
 
 | # | Assumption |
 |---|---|
 | A1 | GAMS code lives in GitHub repositories, and CI runs on GitHub Actions. |
 | A2 | CPLEX is used mainly as a GAMS solver (GAMS/CPLEX), configured through option files. |
-| A3 | SMEs and developers use VS Code with GitHub Copilot Business or Enterprise seats. |
-| A4 | Org Copilot policies can enable MCP servers, custom agents and skills, and Copilot code review. Preview features (hooks, agent plugins) are a bonus, not a dependency. |
-| A5 | Jira and Confluence are Atlassian Cloud. The Rovo MCP server and the Copilot coding agent for Jira are Cloud offerings. If we run Data Center, see §8.5. |
-| A6 | GAMS with a CPLEX license is installed on users' machines and can be provisioned on CI and cloud-agent runners. |
+| A6 | GAMS 53 with a CPLEX license is installed on users' machines and can be provisioned on CI and cloud-agent runners. |
 | A7 | We can create representative small datasets that are approved for use with the agent. |
 
 ---
@@ -165,7 +174,8 @@ Build on GitHub Copilot's native, file-based customization, plus two MCP servers
 | Customization pack (source of truth) | Instructions, skills, custom agents, prompt files, hooks, VS Code workspace config | `pack/` in this repo |
 | Pack sync | Opens versioned PRs that update the pack's files in each GAMS repo | `sync/` + `.github/workflows/sync-pack.yml` in this repo |
 | `gams-tools` | MCP server + CLI for GAMS/CPLEX | `mcp/gams-tools/`, published to our internal package index |
-| Atlassian Rovo MCP server | Read-only Jira and Confluence context | Hosted by Atlassian; configured in each repo's MCP config |
+| Atlassian Rovo MCP server | Read-only Jira and Confluence context | Hosted by Atlassian. Users sign in through each repo's VS Code MCP config; code review and the cloud agent reach it through repository MCP settings, using the service account. |
+| Atlassian service accounts | Read-only access for unattended surfaces (one for production projects and spaces, one for eval fixtures) | Atlassian Cloud; tokens stored as GitHub secrets (§8.2) |
 | Per-repo config | Entry points, test cases, protected paths, GAMS version, Jira/Confluence scope | `.gams-agent.yaml` in each GAMS repo |
 | `gams-checks` | Deterministic CI gate (no AI) | Reusable workflow in this repo, called from GAMS repos |
 | Cloud-agent environment | Pinned GAMS + `gams-tools` on the agent's runner | `copilot-setup-steps.yml` template |
@@ -177,8 +187,8 @@ Build on GitHub Copilot's native, file-based customization, plus two MCP servers
 | Option | Pros | Cons | Verdict |
 |---|---|---|---|
 | **Repo-level Copilot customization pack + MCP servers** | One pack for VS Code, cloud agent and code review; plain files reviewed through PRs; no extension to maintain | Must be synced into each GAMS repo; hooks are still in preview | **Recommended** |
-| VS Code agent plugin (bundles agents, skills, prompts, hooks, MCP) | One-step install at user level | Preview, and admins may disable it; only affects VS Code, not code review or the cloud agent | Optional packaging for VS Code users in Phase 5, built from the same `pack/` |
-| Org-level custom agents in the `.github-private` repo | No per-repo sync for agents | Covers agents only, not skills, prompts, hooks or workspace config; applies org-wide even though this is a team-specific agent | Consider if there are many GAMS repos; decide in Phase 0 |
+| VS Code agent plugin (bundles agents, skills, prompts, hooks, MCP) | One-step install at user level; enabled for us | Preview; only affects VS Code, not code review or the cloud agent | Add in Phase 5 as an extra install route for VS Code users (e.g. repos not yet synced), built from the same `pack/` |
+| Org-level custom agents in the `.github-private` repo | No per-repo sync for agents | Covers agents only, not skills, prompts, hooks or workspace config; applies org-wide even though this is a team-specific agent | **Decided: not for v1.** Agents ship per repo with the rest of the pack. Revisit if sync PRs become a burden. |
 | Custom VS Code extension (chat participant + language model tools) | Full control and custom UI, e.g. a listing-file viewer | Most code to maintain; VS Code only; extension distribution | Not for v1 |
 | App-based Copilot Extension | n/a | Retired by GitHub in favor of MCP | No |
 | Copilot Spaces holding docs | Almost nothing to build; easy Q&A on github.com | No tools or execution, so answers can't be verified | Supplement for SME Q&A only |
@@ -379,7 +389,7 @@ These become slash commands in Copilot Chat.
   - Blocks any Atlassian write tool that is exposed by mistake.
 - **SessionStart check:** verifies that the local GAMS version matches `.gams-agent.yaml`, and warns on a mismatch.
 - **Cross-platform:** hook scripts call the Python `gams-tools` CLI, so they work on Windows, macOS and Linux.
-- **Not load-bearing:** hooks are in preview and admins can disable them, so nothing depends on them alone. The same rules are written into the instructions and agents, and `gams-checks` enforces them in CI.
+- **Enabled, but not load-bearing:** hooks are enabled for us, but they are still in preview and their format may change. So nothing depends on them alone: the same rules are written into the instructions and agents, and `gams-checks` enforces them in CI.
 
 ### 7.6 `gams-tools` MCP server and CLI
 
@@ -439,7 +449,7 @@ These become slash commands in Copilot Chat.
 
 **`extensions.json`** recommends GitHub Copilot Chat and a GAMS syntax extension, chosen in Phase 0.
 
-**Org-managed settings:** admins turn on the chat features we rely on (skills, custom agents, MCP, and optionally hooks) through policy, not per-user settings.
+**Org-managed settings:** admins turn on the features we rely on through policy, not per-user settings: skills, custom agents, prompt files, hooks, and MCP restricted to `gams-tools` and Atlassian.
 
 ### 7.8 Per-repository configuration (`.gams-agent.yaml`)
 
@@ -480,10 +490,10 @@ atlassian:
 2. **Copilot code review (advisory).**
    - **Trigger:** requested automatically on GAMS PRs through a repository ruleset.
    - **Guidance:** the pack's concise instructions plus the review skill.
-   - **Tools:** MCP tools set up in repository settings are read-only during review: `gams-tools` for option validation and error lookup, and Atlassian only if a read-only service account is approved (§8.2).
+   - **Tools:** MCP tools set up in repository settings are read-only during review: `gams-tools` for option validation and error lookup, and Atlassian through the read-only service account (§8.2), so review comments can check Jira acceptance criteria and the linked spec.
    - **Status:** its comments are never a merge gate.
 3. **Humans approve.** Branch protection and CODEOWNERS (SMEs for model code) stay unchanged.
-4. **Copilot cloud agent (optional, Phase 5).**
+4. **Copilot cloud agent (Phase 5 pilot).**
    - **Environment:** `copilot-setup-steps.yml` installs the pinned GAMS 53 build from our internal artifact store and `gams-tools`. The GAMS license comes from a secret in the repository's `copilot` environment.
    - **Network:** the agent firewall allowlist includes only the hosts it needs.
    - **Scope:** start with low-risk work (tests, documentation, refactors proven by GDX diff), assigned from GitHub issues or from Jira (§8.2).
@@ -508,8 +518,18 @@ atlassian:
 ### 8.2 How the agent connects
 
 - **VS Code:** the Atlassian Rovo MCP server. It is a remote server with OAuth 2.1 sign-in, so it sees only what the signed-in user can see. We install it through each repo's MCP config (§7.7) or the VS Code MCP gallery.
-- **Unattended surfaces** (code review, cloud agent, evals) can't complete an interactive sign-in. The option is a **dedicated read-only service account** using API-token auth, which an Atlassian org admin must enable. It is scoped to the designated projects and spaces, with the token stored as a GitHub secret. This is optional and needs security approval. Without it, these surfaces work from the PR, the code and the Jira key alone.
-- **Jira → Copilot cloud agent:** GitHub's Copilot coding agent for Jira (public preview) lets someone assign a Jira issue to Copilot, which then opens a draft PR. It needs Jira Cloud with Rovo enabled. Normal review rules apply. Pilot it in Phase 5 for low-risk tickets only.
+- **Unattended surfaces** (Copilot code review, the cloud agent, evals) can't complete an interactive sign-in, so they use **dedicated read-only service accounts**:
+
+  | Setting | Production service account | Eval service account |
+  |---|---|---|
+  | Atlassian permissions | Browse and read only, on the Jira projects and Confluence spaces in `.gams-agent.yaml` | Browse and read only, on the sandbox Jira project and Confluence space (§11) |
+  | Rights it does **not** have | Create, edit, comment, transition, page create or update | Same |
+  | Auth | API token for the Rovo MCP server (an org admin enables API-token auth). Use read-only token scopes where Atlassian offers them. | Same |
+  | Where the token lives | GitHub secrets: the repository's `copilot` environment (cloud agent) and repository MCP settings (code review) | GitHub Actions secret in this repo (eval workflow) |
+  | Rotation and audit | Rotate on a fixed schedule and before expiry; owner named in §13; review Atlassian audit logs monthly during the pilot | Same |
+
+  Read-only rights are set **in Atlassian**, not just in our tool allowlists. Even a misconfigured agent can't write. The production account sees everything in its designated projects and spaces, so sensitive material stays outside them.
+- **Jira → Copilot cloud agent:** GitHub's Copilot coding agent for Jira (public preview) lets someone assign a Jira issue to Copilot, which then opens a draft PR. Our Jira is Cloud; the integration also needs Rovo enabled on our site (Q6). Normal review rules apply. Pilot it in Phase 5 for low-risk tickets only.
 
 ### 8.3 Conventions we need (decided in Phase 0)
 
@@ -525,15 +545,7 @@ atlassian:
 - **Untrusted content.** Anyone can edit a ticket or page, so the content is data, never instructions (principle 9). Agents that read Atlassian content get no general web or fetch tools, so an injected instruction has no way to send data out. The evals include planted-instruction cases (§11).
 - **Scoped searches.** JQL/CQL searches are limited to the projects and spaces in `.gams-agent.yaml`.
 - **Freshness.** Citations include the page version or last-updated date. The agent flags a page that is older than the code it describes, and flags spec ↔ Jira ↔ code conflicts.
-
-### 8.5 If Jira and Confluence are Data Center (self-managed)
-
-The Rovo MCP server and the Copilot coding agent for Jira target Atlassian Cloud. For Data Center, there are two options:
-
-- **(a)** self-host an open-source MCP server that supports Data Center with personal access tokens, after a security review
-- **(b)** build a small internal read-only MCP server over the Jira and Confluence REST APIs, exposing only the 4–5 tools we need: get issue, search issues, get page, search pages, get page children
-
-Option (b) is preferred if the security review rejects third-party servers. In that case, Phase 2 grows by about 1–2 weeks.
+- **Service-account hygiene.** See §8.2: least privilege set in Atlassian, separate production and eval accounts, secret storage, rotation and audit.
 
 ---
 
@@ -589,10 +601,10 @@ What the pin means for the agent:
   - Confirm that our Copilot Business/Enterprise terms cover model code and the Jira/Confluence content sent as context.
   - Configure content exclusions for protected paths, and verify which Copilot features honor them.
   - Back exclusions up with tool allowlists and hooks, and keep production data out of repositories.
-- **MCP governance.** Use Copilot's org policy controls to allow only approved MCP servers (`gams-tools` and Atlassian) wherever the policy supports an allowlist or registry.
+- **MCP governance.** Use Copilot's org MCP policy to allow only the approved servers: `gams-tools` and Atlassian.
 - **Local execution.** See §7.6: allowlisted test cases, limits enforced by the tool, user confirmation for runs, and the container where available.
-- **Atlassian.** See §8.4: per-user OAuth in VS Code, a read-only scoped service account for unattended use only if approved, and no write tools.
-- **Secrets.** The GAMS license is stored as a secret in the Actions / `copilot` environment. The Atlassian service-account token is added only if approved. Nothing else is stored.
+- **Atlassian.** See §8.2 and §8.4: per-user OAuth in VS Code, and read-only service accounts for unattended use, with read-only rights set in Atlassian. No write tools in v1.
+- **Secrets.** Only the GAMS license and the Atlassian service-account tokens are stored, as GitHub secrets in the Actions / `copilot` environments and repository MCP settings. Tokens are rotated on a schedule.
 - **Licensing.** Confirm that GAMS/CPLEX license terms allow use on CI and cloud-agent runners, and how many runs may happen at once. The license secret must be in the 8-line format that GAMS 51 and later require.
 - **Untrusted input.** PR content, Jira tickets and Confluence pages are all untrusted. Review surfaces are read-only and cannot approve or merge.
 - **Audit.** We keep `gams-tools` invocation logs and use Copilot's org audit and usage data and the Atlassian audit logs.
@@ -612,7 +624,7 @@ What the pin means for the agent:
 | **Context tasks** | 10–15 tasks that need Jira or Confluence, including stale pages, conflicts, and pages with **planted instructions** | Traceability correct; citations accurate; conflicts flagged; planted instructions ignored |
 | **Knowledge Q&A** | 75–100 GAMS 53 / CPLEX questions with answers written by SMEs, including version-boundary questions (features removed by 53, or only in 54+) | Rubric (LLM judge calibrated on an SME-graded subset); every option name and value checked automatically |
 
-Eval Jira and Confluence content lives in a **dedicated sandbox Jira project and Confluence space** (or fixtures served by a stub MCP server), never in production projects.
+Eval Jira and Confluence content lives in a **dedicated sandbox Jira project and Confluence space** on our Atlassian Cloud site, read through the eval service account (§8.2). Production projects are never used.
 
 ### How evals run
 
@@ -650,12 +662,12 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 
 | Phase | Duration | Deliverables | Exit criteria |
 |---|---|---|---|
-| **0. Discovery and decisions** | ~2 weeks | Inventory of GAMS repos and entry points; **confirm the exact GAMS 53.x build, its bundled CPLEX version, and any teams on other releases**; review of the GAMS 51–53 release notes; OS mix and licenses; **audit of Copilot plan and policies** (MCP, custom agents/skills, code review, cloud agent, hooks/plugins previews, models); **Atlassian check** (Cloud vs. Data Center, Rovo, admin approval, service account); Jira/Confluence conventions (§8.3); interviews; defect taxonomy; data classification | Scope, version matrix, data policy, Atlassian access path, conventions and success metrics signed off; answers to the open questions in §15 |
+| **0. Discovery and decisions** | ~2 weeks | Inventory of GAMS repos and entry points; **confirm the exact GAMS 53.x build, its bundled CPLEX version, and any teams on other releases**; review of the GAMS 51–53 release notes; OS mix and licenses; **turn on Copilot policies for pilot repos** (MCP restricted to approved servers, agents/skills/prompts, hooks, code review, cloud agent); **Atlassian requests** (production and eval service accounts, API-token auth for the Rovo MCP server, sandbox project and space, check whether Rovo is enabled); Jira/Confluence conventions (§8.3); interviews; defect taxonomy; data classification | Scope, version matrix, data policy, conventions and success metrics signed off; Copilot policies on for pilot repos; service accounts provisioned; answers to the open questions in §15 |
 | **1. Pack MVP** | ~3 weeks | `copilot-instructions.md` + path instructions; skills `gams-language` and `cplex-via-gams` (built from the GAMS 53 docs), `gams-review`, `org-gams-standards` v0 (first Confluence snapshot); prompts `/gams-review`, `/gams-explain`; VS Code tasks and problem matcher; `.gams-agent.yaml` schema; pack sync to pilot repos; Atlassian MCP (read-only) configured for pilot users | Pilot users run local reviews in VS Code with Jira acceptance criteria pulled in; eval baseline v0 recorded |
-| **2. Tooling and context** | ~4 weeks (+1–2 if §8.5 option b) | `gams-tools` MCP + CLI and sandbox image; five custom agents with tool allowlists; hooks (where enabled); `/gams-implement`, `/gams-diagnose`, `/cplex-tune`, `/gams-test`, `/gams-doc`; skills `gams-testing`, `formulation-docs`, `atlassian-context` | Tool tests pass; measurable eval gain over v0 on coding, diagnosis and context sets |
+| **2. Tooling and context** | ~4 weeks | `gams-tools` MCP + CLI and sandbox image; five custom agents with tool allowlists; hooks; `/gams-implement`, `/gams-diagnose`, `/cplex-tune`, `/gams-test`, `/gams-doc`; skills `gams-testing`, `formulation-docs`, `atlassian-context` | Tool tests pass; measurable eval gain over v0 on coding, diagnosis and context sets |
 | **3. Evaluation harness** | Starts in Phase 1, then continuous | All six eval sets; Copilot CLI runner; code-review eval repo; sandbox Jira project and Confluence space; CI gating in this repo | GA targets measured on every release |
-| **4. GitHub review integration** | ~2–3 weeks | Reusable `gams-checks`; Copilot code review rulesets and repository MCP settings; review-specific instructions tuned under the character limit; shadow period on the eval repo + one pilot repo | Code-review precision ≥ target over at least 20 PRs; `gams-checks` required on pilot repos |
-| **5. Pilot → GA** | ~4–6 weeks pilot | Pilot with the cohort; weekly triage; misses become evals and skill updates; optional cloud agent with `copilot-setup-steps.yml`; optional Jira → Copilot assignment for low-risk tickets; optional VS Code agent plugin packaging; onboarding guide; office hours | GA targets met; support and ownership model in place |
+| **4. GitHub review integration** | ~2–3 weeks | Reusable `gams-checks`; Copilot code review rulesets and repository MCP settings (`gams-tools` + Atlassian via the service account); review-specific instructions tuned under the character limit; shadow period on the eval repo + one pilot repo | Code-review precision ≥ target over at least 20 PRs; `gams-checks` required on pilot repos |
+| **5. Pilot → GA** | ~4–6 weeks pilot | Pilot with the cohort; weekly triage; misses become evals and skill updates; cloud agent with `copilot-setup-steps.yml` for low-risk work; Jira → Copilot assignment for low-risk tickets (if Rovo is enabled, Q6); VS Code agent plugin as an extra install route; onboarding guide; office hours | GA targets met; support and ownership model in place |
 
 ---
 
@@ -666,7 +678,7 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
   - 1–2 engineers for the pack, `gams-tools`, CI and evals
   - SME council for standards, checklist and eval grading
   - GitHub/Copilot admin for policies, rulesets and the cloud agent
-  - Atlassian admin for Rovo MCP access and the service account
+  - Atlassian admin for Rovo MCP access and the service accounts, including token rotation
   - Security review at the Phase 0 and Phase 4 gates
 - **Pilot cohort:** 3–5 SMEs and 3–5 developers across 1–2 model repositories and their Jira project.
 - **Feedback loop:** reactions on review comments plus a `/gams-feedback` prompt, which writes a local note the user can paste into a designated Jira issue. Weekly triage, and a fixed path from each miss to an eval case and a skill update.
@@ -699,48 +711,45 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 | **Running agent-written GAMS is arbitrary code execution, including on laptops** | Security incident | Allowlisted cases, limits enforced in the tool, user confirmation, container where available; ephemeral runners in CI |
 | **Proprietary data exposure** | Policy or legal breach | Phase 0 data decision; content exclusions + allowlists; test and synthetic data only |
 | **Mixed OS (Windows / macOS / Linux) and GAMS installs** | Hooks and tools fail for some users | Python CLI for hooks; SessionStart version check; documented setup; Phase 0 OS inventory |
-| **Atlassian deployment is Data Center, or Rovo/service-account access isn't approved** | Context features delayed | §8.5 fallback; unattended surfaces work without Atlassian |
+| **Service-account token leaks, or the account's access is too broad** | Exposure of Jira/Confluence content | Read-only rights set in Atlassian; access limited to designated projects and spaces; separate eval account; GitHub secret storage; scheduled rotation; audit-log review |
 | **Premium-request costs grow with adoption** | Budget overrun | Per-agent tracking; model choice driven by evals; scope deep reviews to GAMS paths |
 | **License limits for CI or cloud-agent runners** | Blocks Phases 4–5 | Confirm terms in Phase 0; self-hosted runner with GAMS preinstalled if needed |
 
 ---
 
-## 15. Open questions (decisions needed in Phase 0)
+## 15. Questions and decisions
 
-### GAMS and CPLEX
+### Resolved (2026-10-30)
 
-1. **Q1:** GAMS 53 is confirmed. Which exact 53.x.y build is in production, and which CPLEX library version does it bundle? Does any team run a different release, and is there a timeline for moving to GAMS 54?
-2. **Q2:** Is CPLEX used only through GAMS, or also directly (OPL, docplex, CPLEX APIs)? Is direct use in scope for v1?
-3. **Q3:** Do any teams use GAMSPy, the GAMS Python API, GAMS MIRO or GAMS Engine? If so, which versions, and do they line up with GAMS 53?
+| # | Question | Answer |
+|---|---|---|
+| Q1 (part) | Production GAMS release | **GAMS 53.** The exact build is still open (below). |
+| Q4 | Copilot plan and policies | **Every Copilot feature this plan uses can be enabled** (§4, C3). |
+| Q5 | Custom agents per repo, or org-level in `.github-private` | **Per repo**, synced with the rest of the pack (§5.3). |
+| Q6 (part) | Jira and Confluence deployment | **Atlassian Cloud.** Whether Rovo is enabled is still open (below). |
+| Q7 | Atlassian approvals | **The admin can approve the read-only service accounts.** Requesting them, plus API-token auth for the Rovo MCP server, is a Phase 0 action (§8.2, §12). |
 
-### GitHub Copilot
+### Still open (Phase 0)
 
-4. **Q4:** Which Copilot plan are we on (Business or Enterprise)? Which org policies are on today?
-   - MCP servers
-   - custom agents and skills
-   - code review
-   - cloud agent
-   - hooks and agent plugin previews
-   - enabled models
-   - content exclusions
-5. **Q5:** Should custom agents live in each repo (synced) or at org level in the `.github-private` repo?
+**GAMS and CPLEX**
 
-### Jira and Confluence
+- **Q1:** Which exact 53.x.y build is in production, and which CPLEX library version does it bundle? Does any team run a different release, and is there a timeline for moving to GAMS 54?
+- **Q2:** Is CPLEX used only through GAMS, or also directly (OPL, docplex, CPLEX APIs)? Is direct use in scope for v1?
+- **Q3:** Do any teams use GAMSPy, the GAMS Python API, GAMS MIRO or GAMS Engine? If so, which versions, and do they line up with GAMS 53?
 
-6. **Q6:** Are Jira and Confluence Cloud or Data Center? Is Rovo enabled?
-7. **Q7:** Will the Atlassian admin approve:
-   - the Rovo MCP server for VS Code users?
-   - a read-only service account with API-token auth for unattended use?
-8. **Q8:** Which Jira projects and Confluence spaces hold GAMS work, specs, standards, runbooks and incident history? Can we adopt the conventions in §8.3?
+**Jira and Confluence**
 
-### Data, tooling and success measures
+- **Q6:** Is Rovo enabled on our Atlassian site? The Copilot coding agent for Jira needs it (§8.2).
+- **Q8:** Which Jira projects and Confluence spaces hold GAMS work, specs, standards, runbooks and incident history? Can we adopt the conventions in §8.3?
 
-9. **Q9:** What data classification applies to model code, input data and Jira/Confluence content sent to Copilot?
-10. **Q10:** What operating systems do SMEs and developers use, and do they all meet GAMS 53's platform requirements? Is GAMS 53 installed locally for all of them, and is Docker or WSL available?
-11. **Q11:** Can GAMS be installed on GitHub-hosted runners (license and download access), or do we need self-hosted runners?
-12. **Q12:** Do written internal GAMS standards exist, in Confluence or elsewhere, and who owns them?
-13. **Q13:** Are there representative small datasets we can use freely, or must we build synthetic ones?
-14. **Q14:** Who owns each success metric, and what are the final pilot → GA thresholds?
+**Data, tooling and success measures**
+
+- **Q9:** What data classification applies to model code, input data and Jira/Confluence content sent to Copilot?
+- **Q10:** What operating systems do SMEs and developers use, and do they all meet GAMS 53's platform requirements? Is GAMS 53 installed locally for all of them, and is Docker or WSL available?
+- **Q11:** Can GAMS be installed on GitHub-hosted runners (license and download access), or do we need self-hosted runners?
+- **Q12:** Do written internal GAMS standards exist, in Confluence or elsewhere, and who owns them?
+- **Q13:** Are there representative small datasets we can use freely, or must we build synthetic ones?
+- **Q14:** Who owns each success metric, and what are the final pilot → GA thresholds?
 
 ---
 
@@ -852,7 +861,7 @@ Gams_agent/
 │   ├── gams-agent.yaml                   # per-repo config template
 │   ├── copilot-setup-steps.yml           # cloud-agent environment (GAMS + gams-tools)
 │   └── gams-checks-caller.yml            # thin workflow GAMS repos use to call gams-checks
-├── plugin/                               # optional (Phase 5): VS Code agent plugin manifest over pack/
+├── plugin/                               # Phase 5: VS Code agent plugin manifest over pack/
 ├── .github/workflows/
 │   ├── gams-checks.yml                   # reusable deterministic CI gate
 │   ├── sync-pack.yml                     # opens versioned pack PRs in GAMS repos
