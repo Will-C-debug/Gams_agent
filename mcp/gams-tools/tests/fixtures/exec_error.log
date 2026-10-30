@@ -1,0 +1,29 @@
+--- Job ex.gms Start 10/30/26 17:54:49 54.6.1 20a39885 LEX-LEG x86 64bit/Linux
+--- Applying:
+    /opt/gams/gmsprmun.txt
+--- GAMS Parameters defined
+    Input /work/exec/ex.gms
+    Output /work/exec/out/ex0.lst
+    ScrDir /work/exec/225a/
+    SysDir /opt/gams/
+    LogOption 2
+    LogFile /work/exec/out/ex0.log
+    AppendLog 1
+Licensee: GAMS Demo, for EULA and demo limitations see   G260530+0003Cc-GEN
+          https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+          /opt/gams/gamslice.txt
+          ac4c742e-6023-4f8e
+          v:2                                                              
+          Demo license for demonstration and instructional purposes only
+System information: 4 physical cores and 16 Gb physical memory detected
+GAMS 54.6.1   Copyright (C) 1987-2026 GAMS Development. All rights reserved
+--- Starting compilation
+--- ex.gms(1) 2 Mb
+--- call echo compile-time-call-ran > out/called.txt
+--- ex.gms(4) 2 Mb
+--- Starting execution: elapsed 0:00:00.004
+--- ex.gms(3) 3 Mb
+*** Error at line 3: division by zero (0)
+--- ex.gms(4) 3 Mb 1 Error
+*** Status: Execution error(s)
+--- Job ex.gms Stop 10/30/26 17:54:49 elapsed 0:00:00.004

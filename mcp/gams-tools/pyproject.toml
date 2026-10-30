@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gams-tools"
+version = "0.1.0"
+description = "Structured, guarded access to GAMS and CPLEX for the gams-sme Copilot agent: compile, run, listing/log/GDX analysis and option validation."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pyyaml>=6"]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.9"]
+test = ["pytest>=8"]
+
+[project.scripts]
+gams-tools = "gams_tools.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gams_tools"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["gams: needs a licensed GAMS installation (set GAMS_SYSDIR or put gams on PATH)"]

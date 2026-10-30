@@ -1,0 +1,18 @@
+   66 Use of a symbol that has not been defined or assigned
+   66    A wild shot: You may have spurious commas in the explanatory
+   66    text of a declaration. Check symbol reference list.
+  140 Unknown symbol
+  141 Symbol declared but no values have been assigned. Check for missing
+  141    data definition, assignment, data loading or implicit assignment
+  141    via a solve statement. Suppress with $onImplicitAssign.
+  141    A wild shot: You may have spurious commas in the explanatory
+  141    text of a declaration. Check symbol reference list.
+  148 Dimension different - The symbol is referenced with more/less
+  148    indices as declared
+  149 Uncontrolled set entered as constant
+  170 Domain violation for element
+  171 Domain violation for set
+  257 Solve statement not checked because of previous errors
+  409 Unrecognizable item - skip to find a new statement
+  409   looking for a ';' or a key word to get started again
+  542 $call not allowed under this execution mode

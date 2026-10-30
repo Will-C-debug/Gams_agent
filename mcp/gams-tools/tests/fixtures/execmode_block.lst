@@ -1,0 +1,28 @@
+GAMS 54.6.1  20a39885 Oct 24, 2026          LEX-LEG x86 64bit/Linux - 10/30/26 17:54:49 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  $call echo compile-time-call-ran > out/called.txt
+****                                                  $542
+**** 542  $call not allowed under this execution mode
+   2  Scalar a / 0 /, b;
+   3  b = 1/a;
+   4  display b;
+
+**** 1 ERROR(S)   0 WARNING(S)
+
+
+COMPILATION TIME     =        0.001 SECONDS      2 MB  54.6.1 20a39885 LEX-LEG
+
+
+USER: GAMS Demo, for EULA and demo limitations see   G260530+0003Cc-GEN
+      https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+
+
+**** FILE SUMMARY
+
+Input      /work/exec/ex.gms
+Output     /work/exec/out/ex.lst
+
+**** USER ERROR(S) ENCOUNTERED

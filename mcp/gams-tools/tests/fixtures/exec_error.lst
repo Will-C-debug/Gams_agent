@@ -1,0 +1,40 @@
+GAMS 54.6.1  20a39885 Oct 24, 2026          LEX-LEG x86 64bit/Linux - 10/30/26 17:54:49 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   2  Scalar a / 0 /, b;
+   3  b = 1/a;
+   4  display b;
+GAMS 54.6.1  20a39885 Oct 24, 2026          LEX-LEG x86 64bit/Linux - 10/30/26 17:54:49 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  INCLVL  FILENAME
+
+     1        1 INPUT          0       0       0  /work/exec/ex.gms
+     2        1 CALL           1       1       0  echo compile-time-call-ran > out/called.txt
+
+
+COMPILATION TIME     =        0.002 SECONDS      2 MB  54.6.1 20a39885 LEX-LEG
+GAMS 54.6.1  20a39885 Oct 24, 2026          LEX-LEG x86 64bit/Linux - 10/30/26 17:54:49 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+**** Exec Error at line 3: division by zero (0)
+
+----      4 PARAMETER b                    =         UNDF  
+
+
+USER: GAMS Demo, for EULA and demo limitations see   G260530+0003Cc-GEN
+      https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+
+
+**** FILE SUMMARY
+
+Input      /work/exec/ex.gms
+Output     /work/exec/out/ex0.lst
+
+**** USER ERROR(S) ENCOUNTERED

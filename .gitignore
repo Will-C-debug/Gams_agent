@@ -1,0 +1,15 @@
+# gams-tools scratch output (runs, audit log)
+.gams-agent/
+# GAMS process directories and outputs from local runs
+225*/
+*.lst
+*.log
+!mcp/gams-tools/tests/fixtures/*.lst
+!mcp/gams-tools/tests/fixtures/*.log
+# Python
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+dist/
+build/

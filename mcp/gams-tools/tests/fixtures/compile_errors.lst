@@ -1,0 +1,55 @@
+GAMS 54.6.1  20a39885 Oct 24, 2026          LEX-LEG x86 64bit/Linux - 10/30/26 17:53:04 Page 1
+tiny dispatch
+C o m p i l a t i o n
+
+
+   2  Set t 'periods' / t1*t4 /;
+INCLUDE    /work/dispatch/inc/data.inc
+   4  Set g 'units' / g1*g3 /;
+   5  Parameter cap(g) 'capacity MW' / g1 100, g2 80, g3 50 /;
+   6  Parameter cost(g) 'cost $/MWh' / g1 20, g2 30, g3 50 /;
+   7  Parameter load(t) / t1 120, t2 150, t3 200, t4 90 /;
+   8  Positive Variable p(g,t) 'output MW';
+   9  Variable z 'total cost';
+  10  Equation bal(t), lim(g,t), obj;
+  11  bal(t).. sum(g, p(g,t)) =e= load(t);
+  12  lim(g,t).. p(g,t) =l= cap(g) + undefinedThing(g);
+****                                              $140
+**** LINE      9 INPUT       /work/dispatch/main.gms
+**** 140  Unknown symbol
+  13  obj.. z =e= sum((g,t), cost(g)*p(g,t)) + x(t);
+****                                           $140,149
+**** LINE     10 INPUT       /work/dispatch/main.gms
+**** 140  Unknown symbol
+**** 149  Uncontrolled set entered as constant
+  14  Model m / all /;
+  15  solve m using lp minimizing z;
+****                               $257
+**** LINE     12 INPUT       /work/dispatch/main.gms
+**** 257  Solve statement not checked because of previous errors
+
+**** 4 ERROR(S)   0 WARNING(S)
+GAMS 54.6.1  20a39885 Oct 24, 2026          LEX-LEG x86 64bit/Linux - 10/30/26 17:53:04 Page 2
+tiny dispatch
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  INCLVL  FILENAME
+
+     1        1 INPUT          0       0       0  /work/dispatch/main.gms
+     2        3 INCLUDE        1       3       1  /work/dispatch/inc/data.inc
+
+
+COMPILATION TIME     =        0.001 SECONDS      3 MB  54.6.1 20a39885 LEX-LEG
+
+
+USER: GAMS Demo, for EULA and demo limitations see   G260530+0003Cc-GEN
+      https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+
+
+**** FILE SUMMARY
+
+Input      /work/dispatch/main.gms
+Output     /work/dispatch/out/main.lst
+
+**** USER ERROR(S) ENCOUNTERED

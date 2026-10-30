@@ -1,0 +1,38 @@
+--- Job main.gms Start 10/30/26 17:53:04 54.6.1 20a39885 LEX-LEG x86 64bit/Linux
+--- Applying:
+    /opt/gams/gmsprmun.txt
+--- GAMS Parameters defined
+    Input /work/dispatch/main.gms
+    Output /work/dispatch/out/main.lst
+    Action C
+    ScrDir /work/dispatch/225a/
+    SysDir /opt/gams/
+    LogOption 2
+    LogFile /work/dispatch/out/main.log
+    AppendLog 1
+    ErrMsg 1
+Licensee: GAMS Demo, for EULA and demo limitations see   G260530+0003Cc-GEN
+          https://www.gams.com/latest/docs/UG%5FLicense.html         DC0000
+          /opt/gams/gamslice.txt
+          ac4c742e-6023-4f8e
+          v:2                                                              
+          Demo license for demonstration and instructional purposes only
+System information: 4 physical cores and 16 Gb physical memory detected
+GAMS 54.6.1   Copyright (C) 1987-2026 GAMS Development. All rights reserved
+--- Starting compilation
+--- main.gms(3) 3 Mb
+--- > data.inc(3) 3 Mb
+--- main.gms(9) 3 Mb 1 Error
+*** Error 140 in /work/dispatch/main.gms
+    Unknown symbol
+--- main.gms(10) 3 Mb 3 Errors
+*** Error 140 in /work/dispatch/main.gms
+    Unknown symbol
+*** Error 149 in /work/dispatch/main.gms
+    Uncontrolled set entered as constant
+--- main.gms(12) 3 Mb 4 Errors
+*** Error 257 in /work/dispatch/main.gms
+    Solve statement not checked because of previous errors
+--- main.gms(12) 3 Mb 4 Errors
+*** Status: Compilation error(s)
+--- Job main.gms Stop 10/30/26 17:53:04 elapsed 0:00:00.004

@@ -1,0 +1,106 @@
+* Excerpt of optcplex.def shipped with GAMS 53.5.1 (whole option blocks only)
+*
+usebasis boolean 0 0 0 1 GMO usebasis
+cutoff double 0 0.0 mindouble maxdouble 0 1 GMO cutoff
+cuts enumstr 0 "0" 1 7 default cut generation
+ "-1" 1 Do not generate cuts
+ "0" 1 Determined automatically
+ "1" 1 Generate cuts moderately
+ "2" 1 Generate cuts aggressively
+ "3" 1 Generate cuts very aggressively
+ "4" 1 Generate cuts highly aggressively
+ "5" 1 Generate cuts extremely aggressively
+ "yes" 0 Determined automatically. This is a deprecated setting. Please use 1 to 5.
+ "no" 0 Do not generate cuts. This is a deprecated setting. Please use 0.
+feasopt boolean 0 0 1 1 computes a minimum-cost relaxation to make an infeasible model feasible
+ 0 Turns Feasible Relaxation off
+ 1 Turns Feasible Relaxation on
+.feaspref double 0 1 0 1e+020 1 1 feasibility preference
+iis enumint 0 0 1 2 run the conflict refiner also known as IIS finder if the problem is infeasible
+ 0 1 No conflict analysis
+ 1 1 Conflict analysis after solve if infeasible
+ 2 1 Conflict analysis without previous solve
+.lazy boolean 0 0 1 7 Lazy constraints activation
+mipstart integer 0 0 0 6 1 7 use mip starting values
+ 0 do not use the values
+ 1 set discrete variable values and use auto mipstart level
+ 2 set all variable values and use check feasibility mipstart level
+ 3 set discrete variable values and use solve fixed mipstart level
+ 4 set discrete variable values and use solve sub-MIP mipstart level
+ 5 set discrete variable values and use solve repair-MIP mipstart level
+ 6 set discrete variable values and use no checks at all. Warning: CPLEX may accept infeasible points as solutions!
+names boolean 0 1 1 1 load GAMS names into Cplex
+quality boolean 0 0 1 11 write solution quality statistics
+readfile immediate readfile 0 1 read secondary option file
+solvefinal boolean 0 1 1 7 switch to solve the problem with fixed discrete variables
+ 0 Do not solve the fixed problem
+ 1 Solve the fixed problem and return duals
+tuning strlist 0 1 1 invokes parameter tuning tool
+writelp string 0 "" 1 11 produce a Cplex LP file
+epagap double 2008 1.0e-06 0.0 1.0e+20 1 10 absolute stopping tolerance
+epgap double 2009 1.0e-04 0.0 1.0 1 10 relative stopping tolerance
+epint double 2010 1.0e-05 0.0 0.5 1 10 integrality tolerance
+epopt double 1014 1.0e-06 1.0e-09 0.1 1 4 optimality tolerance
+eprhs double 1016 1.0e-06 1.0e-09 0.1 1 4 feasibility tolerance
+lpmethod enumint 1062 0 1 1 algorithm to be used for LP problems
+ 0 1 Automatic
+ 1 1 Primal Simplex
+ 2 1 Dual Simplex
+ 3 1 Network Simplex
+ 4 1 Barrier
+ 5 1 Sifting
+ 6 1 Concurrent
+mipdisplay enumint 2012 4 1 11 progress display level
+ 0 1 No display
+ 1 1 Display integer feasible solutions
+ 2 1 Displays nodes under mipinterval control
+ 3 1 Same as 2 but adds information on cuts
+ 4 1 Same as 3 but adds LP display for the root node
+ 5 1 Same as 3 but adds LP display for all nodes
+mipemphasis enumint 2058 0 1 7 MIP solution tactics
+ 0 1 Balance optimality and feasibility
+ 1 1 Emphasize feasibility over optimality
+ 2 1 Emphasize optimality over feasibility
+ 3 1 Emphasize moving the best bound
+ 4 1 Emphasize hidden feasible solutions
+ 5 1 Find high quality feasible solutions as early as possible
+mipinterval integer 2013 0 -2147483648 2147483647 1 11 progress display interval
+nodelim integer 2017 2147483647 0 2147483647 1 8 maximum number of nodes to solve
+numericalemphasis boolean 1083 0 1 1 emphasizes precision in numerically unstable or difficult problems
+ 0 Off
+ 1 Exercise extreme caution in computation
+parallelmode enumint 1109 1 1 1 parallel optimization mode
+ -1 1 Enable opportunistic parallel search mode
+ 0 1 Automatic
+ 1 1 Enable deterministic parallel search mode
+scaind enumint 1034 0 1 1 matrix scaling on/off
+ -1 1 No scaling
+ 0 1 Standard scaling
+ 1 1 Modified, more aggressive scaling method
+threads integer 1067 0 minint maxint 1 1 global default thread count
+tilim double 1039 1.0e+75 0.0 1.0e+75 1 1 overrides the GAMS ResLim option
+mipgap synonym epgap
+setepgap synonym epgap
+integraltol synonym epint
+gthreads synonym threads
+reslim synonym tilim
+indic  indicator
+myeolchar EOLCOMM !
+cplex11 deprecated
+ writepremps Use option writepre to specify file name. File extension determines problem format
+synon deprecated
+ mipgap
+ integraltol
+general group 1 1 Preprocessing and General Options
+simplexalg group 2 1 Simplex Algorithmic Options
+simplexlim group 3 1 Simplex Limit Options
+simplextol group 4 1 Simplex Tolerance Options
+barrier group 5 1 Barrier Specific Options
+siftopt group 6 1 Sifting Specific Options
+mipalg group 7 1 MIP Algorithmic Options
+miplim group 8 1 MIP Limit Options
+solpool group 9 1 MIP Solution Pool Options
+miptol group 10 1 MIP Tolerance Options
+output group 11 1 Output Options
+bch group 12 1 BCH Facility Options
+*** End of file
