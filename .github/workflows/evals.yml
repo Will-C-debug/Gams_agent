@@ -1,0 +1,45 @@
+# Eval maintenance: re-verify seeded defects against GAMS 53 and run the harness tests.
+# Agent runs (Copilot CLI or VS Code) are started from a developer machine until Copilot CLI
+# authentication for Actions is set up (plan Phase 3); their outputs are graded with the runner scripts.
+name: evals
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ["evals/**", "pack/**", "mcp/gams-tools/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    env:
+      HAS_LICENSE: ${{ secrets.GAMS_LICENSE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -q -e "mcp/gams-tools[test]"
+      - name: Harness tests
+        run: python -m pytest -q evals/tests
+      - name: Set up GAMS 53
+        if: env.HAS_LICENSE == 'true'
+        uses: ./.github/actions/setup-gams
+        with:
+          gams-version: "53.5.1"
+          installer-url: ${{ vars.GAMS_INSTALLER_URL }}
+          license: ${{ secrets.GAMS_LICENSE }}
+          gams-tools-path: mcp/gams-tools
+      - name: Verify seeded defects against GAMS 53
+        if: env.HAS_LICENSE == 'true'
+        run: |
+          python evals/runner/verify_seeds.py
+          git diff --stat evals/seeded_defects/effects.json || true
+      - name: Upload effects
+        if: env.HAS_LICENSE == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: seeded-defect-effects
+          path: evals/seeded_defects/effects.json

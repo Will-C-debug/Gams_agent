@@ -1,0 +1,322 @@
+{
+  "gams_version": "54.6.1",
+  "base": {
+    "returncode": 0,
+    "model_status": [
+      "Optimal"
+    ],
+    "objective": 78640.0,
+    "exec_errors": [],
+    "not_in_solved_model": [],
+    "options_deprecated": [],
+    "lambda": [
+      55.0,
+      55.0,
+      28.0,
+      28.0,
+      28.0,
+      28.0,
+      28.0,
+      18.0
+    ]
+  },
+  "cases": {
+    "uc-001": {
+      "title": "Initial on/off status dropped from the commitment logic",
+      "location_text": "commit(g,t).. u(g,t) - u(g,t-1)",
+      "effect": "objective 78640.0 -> 82640.0; lambda [55.0, 55.0, 28.0, 28.0, 28.0, 28.0, 28.0, 18.0] -> [18.0, 55.0, 28.0, 28.0, 28.0, 28.0, 28.0, 18.0]",
+      "observed": {
+        "returncode": 0,
+        "model_status": [
+          "Optimal"
+        ],
+        "objective": 82640.0,
+        "exec_errors": [],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          18.0,
+          55.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          18.0
+        ]
+      }
+    },
+    "uc-002": {
+      "title": "Ramp-up limit ignores the initial output in the first hour",
+      "location_text": "rampUp(g,t)..   p(g,t) - p(g,t-1)",
+      "effect": "execution error: Execution halted: abort$1 'unit commitment did not return a usable solution'; model status ['Optimal'] -> ['Integer Infeasible']; objective 78640.0 -> None; lambda [55.0, 55.0, 28.0, 28.0, 28.0, 28.0, 28.0, 18.0] -> [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]",
+      "observed": {
+        "returncode": 3,
+        "model_status": [
+          "Integer Infeasible"
+        ],
+        "objective": null,
+        "exec_errors": [
+          "Execution halted: abort$1 'unit commitment did not return a usable solution'"
+        ],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "uc-003": {
+      "title": "Spinning reserve computed from minimum instead of maximum output",
+      "location_text": "reserve(t)..  sum(g, unitData(g,'pmin')*u(g,t) - p(g,t)) =g= reserveShare*demand(t);",
+      "effect": "execution error: Execution halted: abort$1 'unit commitment did not return a usable solution'; model status ['Optimal'] -> ['Integer Infeasible']; objective 78640.0 -> None; lambda [55.0, 55.0, 28.0, 28.0, 28.0, 28.0, 28.0, 18.0] -> [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]",
+      "observed": {
+        "returncode": 3,
+        "model_status": [
+          "Integer Infeasible"
+        ],
+        "objective": null,
+        "exec_errors": [
+          "Execution halted: abort$1 'unit commitment did not return a usable solution'"
+        ],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "uc-004": {
+      "title": "Start-up cost missing from the objective",
+      "location_text": "objective..   cost =e= sum((g,t), unitData(g,'mc')*p(g,t) + unitData(g,'noload')*u(g,t));",
+      "effect": "objective 78640.0 -> 76540.0",
+      "observed": {
+        "returncode": 0,
+        "model_status": [
+          "Optimal"
+        ],
+        "objective": 76540.0,
+        "exec_errors": [],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          55.0,
+          55.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          18.0
+        ]
+      }
+    },
+    "uc-005": {
+      "title": "Explicit model list omits the reserve equation",
+      "location_text": "Model uc / balance, maxOut, minOut, commit, rampUp, rampDown, minUp, minDown, objective /;",
+      "effect": "objective 78640.0 -> 76960.0; equations not in solved model: ['reserve']",
+      "observed": {
+        "returncode": 0,
+        "model_status": [
+          "Optimal"
+        ],
+        "objective": 76960.0,
+        "exec_errors": [],
+        "not_in_solved_model": [
+          "reserve"
+        ],
+        "options_deprecated": [],
+        "lambda": [
+          55.0,
+          55.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          18.0
+        ]
+      }
+    },
+    "uc-006": {
+      "title": "Solve status is no longer checked before results are used",
+      "location_text": "solve uc using mip minimizing cost;",
+      "effect": "no observable effect on this dataset (code-reading defect)",
+      "observed": {
+        "returncode": 0,
+        "model_status": [
+          "Optimal"
+        ],
+        "objective": 78640.0,
+        "exec_errors": [],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          55.0,
+          55.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          18.0
+        ]
+      }
+    },
+    "uc-007": {
+      "title": "Minimum up-time window is one period too long",
+      "location_text": "minUp(g,t)..   sum(tt$(ord(tt) >= ord(t) - unitData(g,'minup') and ord(tt) <= ord(t)), v(g,tt))",
+      "effect": "no observable effect on this dataset (code-reading defect)",
+      "observed": {
+        "returncode": 0,
+        "model_status": [
+          "Optimal"
+        ],
+        "objective": 78640.0,
+        "exec_errors": [],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          55.0,
+          55.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          18.0
+        ]
+      }
+    },
+    "uc-008": {
+      "title": "System lambda reported with the wrong sign",
+      "location_text": "lambda(t) = -balance.m(t);",
+      "effect": "lambda [55.0, 55.0, 28.0, 28.0, 28.0, 28.0, 28.0, 18.0] -> [-55.0, -55.0, -28.0, -28.0, -28.0, -28.0, -28.0, -18.0]",
+      "observed": {
+        "returncode": 0,
+        "model_status": [
+          "Optimal"
+        ],
+        "objective": 78640.0,
+        "exec_errors": [],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          -55.0,
+          -55.0,
+          -28.0,
+          -28.0,
+          -28.0,
+          -28.0,
+          -28.0,
+          -18.0
+        ]
+      }
+    },
+    "uc-009": {
+      "title": "Fixed-problem solve disabled, so system lambda has no marginals",
+      "location_text": "solvefinal 0",
+      "effect": "lambda [55.0, 55.0, 28.0, 28.0, 28.0, 28.0, 28.0, 18.0] -> ['NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA']",
+      "observed": {
+        "returncode": 0,
+        "model_status": [
+          "Optimal"
+        ],
+        "objective": 78640.0,
+        "exec_errors": [],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          "NA",
+          "NA",
+          "NA",
+          "NA",
+          "NA",
+          "NA",
+          "NA",
+          "NA"
+        ]
+      }
+    },
+    "uc-010": {
+      "title": "Deprecated, loose gap in the option file overrides optCR = 0",
+      "location_text": "mipgap 0.05",
+      "effect": "deprecated options: ['mipgap']",
+      "observed": {
+        "returncode": 0,
+        "model_status": [
+          "Optimal"
+        ],
+        "objective": 78640.0,
+        "exec_errors": [],
+        "not_in_solved_model": [],
+        "options_deprecated": [
+          "mipgap"
+        ],
+        "lambda": [
+          55.0,
+          55.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          28.0,
+          18.0
+        ]
+      }
+    },
+    "uc-011": {
+      "title": "Unit label typo in the data table (domain violation)",
+      "location_text": "ccgt_1    200     70    28    400     1500     100   2      2        0        0",
+      "effect": "compilation error(s) [141, 170, 257]",
+      "observed": {
+        "compile_errors": [
+          141,
+          170,
+          257
+        ]
+      }
+    },
+    "uc-012": {
+      "title": "Minimum output above maximum output for ct1",
+      "location_text": "ct1       100     120   55    150      300     100   1      1        0        0",
+      "effect": "execution error: Execution halted: abort$1 'unit commitment did not return a usable solution'; model status ['Optimal'] -> ['Integer Infeasible']; objective 78640.0 -> None; lambda [55.0, 55.0, 28.0, 28.0, 28.0, 28.0, 28.0, 18.0] -> [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]",
+      "observed": {
+        "returncode": 3,
+        "model_status": [
+          "Integer Infeasible"
+        ],
+        "objective": null,
+        "exec_errors": [
+          "Execution halted: abort$1 'unit commitment did not return a usable solution'"
+        ],
+        "not_in_solved_model": [],
+        "options_deprecated": [],
+        "lambda": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+* Solve the fixed-commitment LP after the MIP so equation marginals (system lambda) are
+* returned. Default 1 in GAMS 53, but 0 in GAMS 54 - set explicitly so behavior is version-proof.
+solvefinal 1

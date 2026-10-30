@@ -28,6 +28,8 @@ jobs:
         run: python -m pytest -q
       - name: Validate the customization pack
         run: python scripts/validate_pack.py
+      - name: Eval harness tests
+        run: python -m pytest -q evals/tests
 
   integration:
     runs-on: ubuntu-latest

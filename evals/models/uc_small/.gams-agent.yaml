@@ -1,0 +1,17 @@
+# Eval base model configuration (used by evals/runner and the seeded-defect checks).
+gams:
+  version: "53"
+  cplex_version: "22.1.2"
+  exec_mode: 2
+limits:
+  reslim: 60
+  threads: 1
+  wallclock: 120
+entry_points:
+  - path: main.gms
+test_cases:
+  - name: uc-small
+    entry: main.gms
+    symbols: [p, u, lambda, cost]
+option_files:
+  - cplex.opt

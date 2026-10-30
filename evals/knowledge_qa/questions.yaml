@@ -1,0 +1,55 @@
+# Seed knowledge questions (GAMS 53 / CPLEX). The SME council extends this to 75-100 questions.
+# Grading: every `must_mention` pattern (regex, case-insensitive) must appear, no `must_not_mention`
+# pattern may appear, and every CPLEX option the answer names in backticks must exist in the
+# installed GAMS release (checked against opt<solver>.def by grade_qa.py).
+questions:
+  - id: qa-001
+    question: In GAMS 53 with CPLEX, after solving a MIP, are equation marginals available, and what controls that?
+    must_mention: ["solvefinal", "fixed (problem|LP)", "(default|defaults) (is |to )?1"]
+    must_not_mention: ["MIPs? (do not|don't) have (any )?marginals in GAMS"]
+
+  - id: qa-002
+    question: We are upgrading from GAMS 53 to 54. What could happen to system lambda computed as balance.m after a unit commitment MIP?
+    must_mention: ["solvefinal", "(NA|not available|no marginals)", "requestMarginals|RequestMarginals"]
+
+  - id: qa-003
+    question: Which takes precedence for the relative MIP gap - option optCR in the GAMS code, the model attribute m.optCR, or epgap in cplex.opt?
+    must_mention: ["epgap", "option file|cplex\\.opt"]
+    must_not_mention: ["optCR (always )?(wins|takes precedence) over (the )?(option file|epgap)"]
+
+  - id: qa-004
+    question: Is mipgap a valid CPLEX option in GAMS 53, and what should be used instead?
+    must_mention: ["deprecated", "epgap"]
+
+  - id: qa-005
+    question: How do I get CPLEX to tell me why my GAMS model is infeasible?
+    must_mention: ["\\biis\\b", "conflict"]
+
+  - id: qa-006
+    question: A $load from GDX silently dropped some units in GAMS 53. Why, and how do I make that fail loudly?
+    must_mention: ["filtered", "\\$loadDC|execute_loadDC"]
+
+  - id: qa-007
+    question: What does GAMS error 149 mean and how is it usually fixed?
+    must_mention: ["uncontrolled", "(domain|sum|controlled)"]
+
+  - id: qa-008
+    question: Why does my equation named logic fail to compile?
+    must_mention: ["reserved|keyword", "logic equation"]
+
+  - id: qa-009
+    question: How do I make CPLEX results reproducible across runs in GAMS?
+    must_mention: ["parallelmode", "threads"]
+
+  - id: qa-010
+    question: Which CPLEX option values are valid for lpmethod in GAMS 53, and which one is dual simplex?
+    must_mention: ["\\b2\\b.*dual|dual.*\\b2\\b"]
+
+  - id: qa-011
+    question: The agent's GAMS run failed with error 542. What happened?
+    must_mention: ["execMode|exec_mode", "\\$call|embedded code|execute"]
+
+  - id: qa-012
+    question: Lambda is 55 $/MWh in hour 1 although the cheapest unit (18 $/MWh) is below its capacity. Is that a bug?
+    must_mention: ["ramp", "(binding|limit)"]
+    must_not_mention: ["(this|it) is (definitely )?a bug"]

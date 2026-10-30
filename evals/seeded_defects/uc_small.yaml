@@ -1,0 +1,137 @@
+# Seeded defects for the uc_small base model (evals/models/uc_small).
+# Each case applies exact text edits to the base model; `location` is the ground-truth line in the
+# *seeded* file. `keywords` are terms a correct finding is expected to mention (any one is enough).
+# Observed effects are recorded by evals/runner/verify_seeds.py in effects.json.
+base: ../models/uc_small
+cases:
+  - id: uc-001
+    title: Initial on/off status dropped from the commitment logic
+    category: Formulation
+    severity: Blocker
+    location: { file: main.gms, line: 49 }
+    keywords: [init_on, initial status, first period, first hour, start-up]
+    edits:
+      - file: main.gms
+        find: "commit(g,t).. u(g,t) - u(g,t-1) - unitData(g,'init_on')$(ord(t) = 1)"
+        replace: "commit(g,t).. u(g,t) - u(g,t-1)"
+
+  - id: uc-002
+    title: Ramp-up limit ignores the initial output in the first hour (model becomes infeasible)
+    category: Formulation
+    severity: Blocker
+    location: { file: main.gms, line: 52 }
+    keywords: [init_p, initial output, first period, first hour, ramp]
+    edits:
+      - file: main.gms
+        find: "rampUp(g,t)..   p(g,t) - p(g,t-1) - unitData(g,'init_p')$(ord(t) = 1)"
+        replace: "rampUp(g,t)..   p(g,t) - p(g,t-1)"
+
+  - id: uc-003
+    title: Spinning reserve computed from minimum instead of maximum output
+    category: Formulation
+    severity: Blocker
+    location: { file: main.gms, line: 43 }
+    keywords: [pmin, pmax, headroom, reserve]
+    edits:
+      - file: main.gms
+        find: "sum(g, unitData(g,'pmax')*u(g,t) - p(g,t)) =g="
+        replace: "sum(g, unitData(g,'pmin')*u(g,t) - p(g,t)) =g="
+
+  - id: uc-004
+    title: Start-up cost missing from the objective
+    category: Formulation
+    severity: Major
+    location: { file: main.gms, line: 65 }
+    keywords: [startup, start-up cost, start-up costs, objective]
+    edits:
+      - file: main.gms
+        find: "+ unitData(g,'noload')*u(g,t)\n                                  + unitData(g,'startup')*v(g,t));"
+        replace: "+ unitData(g,'noload')*u(g,t));"
+
+  - id: uc-005
+    title: Explicit model list omits the reserve equation
+    category: Formulation
+    severity: Blocker
+    location: { file: main.gms, line: 68 }
+    keywords: [reserve, model statement, not in the model, omitted]
+    edits:
+      - file: main.gms
+        find: "Model uc / all /;"
+        replace: "Model uc / balance, maxOut, minOut, commit, rampUp, rampDown, minUp, minDown, objective /;"
+
+  - id: uc-006
+    title: Solve status is no longer checked before results are used
+    category: Solve handling
+    severity: Blocker
+    location: { file: main.gms, line: 71 }
+    keywords: [modelStat, solve status, model status, abort, unchecked]
+    edits:
+      - file: main.gms
+        find: "abort$(uc.modelStat <> %modelStat.optimal% and uc.modelStat <> %modelStat.integerSolution%)\n   'unit commitment did not return a usable solution', uc.modelStat;\n"
+        replace: ""
+
+  - id: uc-007
+    title: Minimum up-time window is one period too long
+    category: Formulation
+    severity: Major
+    location: { file: main.gms, line: 59 }
+    keywords: [minup, minimum up, window, off-by-one, off by one, "+ 1"]
+    edits:
+      - file: main.gms
+        find: "ord(tt) >= ord(t) - unitData(g,'minup') + 1"
+        replace: "ord(tt) >= ord(t) - unitData(g,'minup')"
+
+  - id: uc-008
+    title: System lambda reported with the wrong sign
+    category: Solve handling
+    severity: Major
+    location: { file: main.gms, line: 77 }
+    keywords: [sign, negative, lambda, balance.m]
+    edits:
+      - file: main.gms
+        find: "lambda(t) = balance.m(t);"
+        replace: "lambda(t) = -balance.m(t);"
+
+  - id: uc-009
+    title: Fixed-problem solve disabled, so system lambda has no marginals
+    category: Solver config
+    severity: Blocker
+    location: { file: cplex.opt, line: 3 }
+    keywords: [solvefinal, marginals, lambda, NA]
+    edits:
+      - file: cplex.opt
+        find: "solvefinal 1"
+        replace: "solvefinal 0"
+
+  - id: uc-010
+    title: Deprecated, loose gap in the option file overrides optCR = 0
+    category: Solver config
+    severity: Major
+    location: { file: cplex.opt, line: 4 }
+    keywords: [mipgap, deprecated, epgap, optcr, gap]
+    edits:
+      - file: cplex.opt
+        find: "solvefinal 1\n"
+        replace: "solvefinal 1\nmipgap 0.05\n"
+
+  - id: uc-011
+    title: Unit label typo in the data table (domain violation)
+    category: Data
+    severity: Blocker
+    location: { file: data/units.inc, line: 7 }
+    keywords: [ccgt_1, domain violation, "170", label]
+    edits:
+      - file: data/units.inc
+        find: "ccgt1     200"
+        replace: "ccgt_1    200"
+
+  - id: uc-012
+    title: Minimum output above maximum output for ct1 (model becomes infeasible)
+    category: Data
+    severity: Blocker
+    location: { file: data/units.inc, line: 8 }
+    keywords: [pmin, pmax, ct1, minimum output, never commit]
+    edits:
+      - file: data/units.inc
+        find: "ct1       100     20 "
+        replace: "ct1       100     120"
