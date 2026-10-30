@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review, revision 4 |
+| **Status** | Draft for review, revision 5 |
 | **Date** | 2026-10-30 |
 | **Platform** | VS Code + GitHub Copilot, with Jira and Confluence as context sources |
 | **GAMS release** | GAMS 53 in production. The exact 53.x build and bundled CPLEX version are confirmed in Phase 0 (§9, Version pin). |
@@ -14,6 +14,8 @@
 > **Revision 3** pins the agent to **GAMS 53**: its docs index, option validation, sandbox image and evals (§9, Version pin).
 >
 > **Revision 4** records three confirmations: Jira and Confluence are **Atlassian Cloud**, a **read-only Atlassian service account** can be approved, and **every Copilot feature this plan uses can be enabled**. The Data Center fallback is gone, the service account is part of the core design (§8.2), and the resolved questions are listed in §15.
+>
+> **Revision 5** confirms that Rovo is enabled. It records the Jira projects and Confluence spaces that mention GAMS (§8.5), and adds the power-system scheduling domain those projects point to: a domain skill (§7.2) and domain checklist items (Appendix A.9).
 
 ---
 
@@ -87,7 +89,7 @@ We will deliver in phases over roughly **14–18 weeks to general availability**
 | | "Why did solve time triple after this change?" | A comparison of the before/after logs, the formulation or data change that caused the slowdown, and ranked option or formulation suggestions with evidence. |
 | | "Explain this legacy model. Is its Confluence page still accurate?" | A structured walkthrough of sets, data flow, variables, constraints, objective and outputs, plus a list of places where the Confluence page and the code disagree. |
 | | "Are these CPLEX settings sensible?" | An option-by-option review, checked against the installed option definitions, with a rationale for each non-default. |
-| **Developer** | "Implement OPTMOD-123." | The agent reads the issue, its acceptance criteria and the linked spec, and proposes a plan for approval. It then makes a minimal diff that compiles, adds a regression test, and writes a PR description with the Jira key and an acceptance-criteria checklist. |
+| **Developer** | "Implement UC-123." | The agent reads the issue, its acceptance criteria and the linked spec, and proposes a plan for approval. It then makes a minimal diff that compiles, adds a regression test, and writes a PR description with the Jira key and an acceptance-criteria checklist. |
 | | "Fix this compilation / execution error." | The root cause explained, and the fix confirmed by recompiling or rerunning. |
 | | "Refactor this include structure / move data I/O to GAMS Connect." | A change that keeps behavior the same, proven by a GDX diff on baseline datasets. |
 | | "Write regression tests for this model." | Small datasets, golden outputs, and a tolerance-based comparison wired into CI. |
@@ -107,6 +109,8 @@ We will deliver in phases over roughly **14–18 weeks to general availability**
 | C3 | **Every Copilot feature this plan uses can be enabled**: MCP servers (restricted to approved ones), custom agents, skills and prompt files, Copilot code review, Copilot cloud agent, hooks and agent plugins (both in preview), model selection, and content exclusions. |
 | C4 | **Jira and Confluence are Atlassian Cloud**, so the Rovo MCP server applies and no Data Center fallback is needed. |
 | C5 | The Atlassian admin can approve a **read-only service account** for unattended access (§8.2). |
+| C6 | **Rovo is enabled** on our Atlassian site, so the Copilot coding agent for Jira is available (§8.2). |
+| C7 | **GAMS content lives in five Jira projects** (GO, UC, IHP1, INTRA1, CES) **and six Confluence spaces** (DT, STD, AH, AVR, FOT, AV), per a Rovo search (§8.5). |
 
 ### Assumptions still to confirm in Phase 0
 
@@ -282,6 +286,15 @@ Severities:
 - **Python tooling.** GAMSPy and the GAMS Python API, if used internally (Q3).
 - **Release specifics.** What changed up to GAMS 53, and what is only available in later releases (§9, Version pin).
 
+**Power-system scheduling domain** (inferred from our Jira and Confluence content, §8.5; confirmed with SMEs in Phase 0)
+
+- **Unit commitment.** On/off, startup and shutdown logic; minimum up and down times; initial status carried in from the previous horizon; startup costs.
+- **Dispatch and intra-hour scheduling.** Ramp limits between intervals and across horizon boundaries; MW ↔ MWh conversion by interval length.
+- **Redispatch and contract energy scheduling.** Deviations from a base schedule; contract minimum and maximum energy over a period.
+- **Reserves and costs.** Reserves coupled to the headroom of committed units; piecewise-linear cost curves (convexity, SOS2).
+- **System lambda.** Marginal prices taken from the power-balance duals of a fixed-commitment re-solve, and lambda kept consistent with dispatch, as the Lambda Policy Module requires.
+- **Avalon modules.** Which GAMS model each Avalon module uses, and how.
+
 **CPLEX through GAMS**
 
 - **Option files.** Mechanics of option files.
@@ -332,7 +345,8 @@ We use the `excludeAgent` frontmatter (`code-review` / `coding-agent`) where gui
 | `gams-language` | Semantics and pitfalls, in reference files by topic, plus a "changes up to GAMS 53" reference | GAMS 53 documentation and release notes + SME review |
 | `cplex-via-gams` | Option files, options by purpose, status codes, logs, infeasibility workflow, numerics, tuning | GAMS 53 CPLEX solver manual + CPLEX parameter reference for the CPLEX version bundled with GAMS 53 |
 | `gams-review` | Review procedure, checklist (Appendix A), severities, output contract (§6.2) | This plan + Phase 0 defect taxonomy |
-| `org-gams-standards` | Internal conventions, model catalog, glossary, approved option-file patterns | Snapshot of the Confluence standards space (§9); owned by the SME council |
+| `org-gams-standards` | Internal conventions, model catalog, glossary, approved option-file patterns | Snapshot of a GAMS standards page in the STD space, which the SME council drafts in Phase 0 if none exists (§8.5, §9) |
+| `power-scheduling-domain` | Unit commitment, dispatch, redispatch, contract scheduling and system-lambda patterns; the domain checklist (Appendix A.9); how each Avalon module uses its GAMS model; domain glossary | SME interviews, AH (Avalon Help) pages, history in the GO/UC/IHP1/INTRA1/CES projects; validated by the SME council |
 | `gams-testing` | Regression-test pattern: small datasets, golden GDX, tolerance diff, CI wiring | Built in Phase 2 |
 | `formulation-docs` | GAMS → math notation; spec ↔ code traceability; doc-drift report | Built in Phase 2 |
 | `atlassian-context` | How to find the Jira issue (branch or PR title), approved JQL/CQL patterns, scoped projects and spaces, how to cite, how to handle conflicts and untrusted content | Built in Phase 2 |
@@ -472,9 +486,9 @@ protected_paths:
 option_files:
   - models/dispatch/cplex.opt
 atlassian:
-  jira_projects: [OPTMOD]                          # projects the agent may search
-  issue_key_pattern: "OPTMOD-[0-9]+"               # found in branch names / PR titles
-  confluence_spaces: [OPTSPEC, GAMSSTD]            # spaces the agent may search
+  jira_projects: [GO, UC]                          # projects this repo's work is tracked in (§8.5)
+  issue_key_pattern: "(GO|UC|IHP1|INTRA1|CES)-[0-9]+"   # found in branch names / PR titles
+  confluence_spaces: [DT, STD, AH, AVR]            # default search scope (§8.5)
   spec_labels: [model-spec]
   runbook_labels: [runbook, lessons-learned]
 ```
@@ -522,21 +536,22 @@ atlassian:
 
   | Setting | Production service account | Eval service account |
   |---|---|---|
-  | Atlassian permissions | Browse and read only, on the Jira projects and Confluence spaces in `.gams-agent.yaml` | Browse and read only, on the sandbox Jira project and Confluence space (§11) |
+  | Atlassian permissions | Browse and read only, on the Jira projects and Confluence spaces listed in §8.5 (GO, UC, IHP1, INTRA1, CES; DT, STD, AH, AVR) | Browse and read only, on the sandbox Jira project and Confluence space (§11) |
   | Rights it does **not** have | Create, edit, comment, transition, page create or update | Same |
   | Auth | API token for the Rovo MCP server (an org admin enables API-token auth). Use read-only token scopes where Atlassian offers them. | Same |
   | Where the token lives | GitHub secrets: the repository's `copilot` environment (cloud agent) and repository MCP settings (code review) | GitHub Actions secret in this repo (eval workflow) |
   | Rotation and audit | Rotate on a fixed schedule and before expiry; owner named in §13; review Atlassian audit logs monthly during the pilot | Same |
 
   Read-only rights are set **in Atlassian**, not just in our tool allowlists. Even a misconfigured agent can't write. The production account sees everything in its designated projects and spaces, so sensitive material stays outside them.
-- **Jira → Copilot cloud agent:** GitHub's Copilot coding agent for Jira (public preview) lets someone assign a Jira issue to Copilot, which then opens a draft PR. Our Jira is Cloud; the integration also needs Rovo enabled on our site (Q6). Normal review rules apply. Pilot it in Phase 5 for low-risk tickets only.
+- **Jira → Copilot cloud agent:** GitHub's Copilot coding agent for Jira (public preview) lets someone assign a Jira issue to Copilot, which then opens a draft PR. Our Jira is Cloud with Rovo enabled, so the integration is available to us. Normal review rules apply. Pilot it in Phase 5 for low-risk tickets only.
 
 ### 8.3 Conventions we need (decided in Phase 0)
 
-- The Jira key goes in branch names and PR titles (e.g. `OPTMOD-123-ramp-limits`), so agents find the issue without being told.
+- The Jira key goes in branch names and PR titles (e.g. `UC-123-ramp-limits`), so agents find the issue without being told.
+- GAMS-related issues in GO, UC, IHP1, INTRA1 and CES get a `gams` label, so JQL finds them even when the text says only "CPLEX" or "infeasible".
 - GAMS-related issue types have a clear **Acceptance criteria** field or section.
 - Issues link to their Confluence spec page.
-- Confluence uses designated spaces and labels (`model-spec`, `gams-standard`, `runbook`, `lessons-learned`).
+- Confluence pages in the designated spaces (§8.5) carry labels: `model-spec`, `gams-standard`, `runbook`, `lessons-learned`.
 - These are listed in `.gams-agent.yaml`, so searches stay within scope.
 
 ### 8.4 Guardrails
@@ -546,6 +561,41 @@ atlassian:
 - **Scoped searches.** JQL/CQL searches are limited to the projects and spaces in `.gams-agent.yaml`.
 - **Freshness.** Citations include the page version or last-updated date. The agent flags a page that is older than the code it describes, and flags spec ↔ Jira ↔ code conflicts.
 - **Service-account hygiene.** See §8.2: least privilege set in Atlassian, separate production and eval accounts, secret storage, rotation and audit.
+
+### 8.5 Our Atlassian scope (Rovo search, 2026-10-30)
+
+**Jira projects with issues that mention GAMS**
+
+| Key | Name | Issues | Planned use |
+|---|---|---|---|
+| GO | FOT | 93 | Main history source: defect taxonomy, "seen before?" searches, historical-issue evals, diagnosis tasks |
+| UC | Unit Commitment | 7 | Unit commitment model work: acceptance criteria, specs, related changes |
+| IHP1 | Intra-Hour Phase 1 | 7 | Intra-hour model work |
+| INTRA1 | Intra-hour Implementation Project | 2 | Intra-hour model work |
+| CES | Contract Energy Scheduling | 1 | Contract scheduling model work |
+
+**Confluence spaces with pages that mention GAMS**
+
+| Space | Name | Page(s) found | Likely role | In default search scope? |
+|---|---|---|---|---|
+| DT | Developer Tools | "GAMS" | Developer setup and tooling for GAMS; starting point for the onboarding guide | Yes |
+| STD | Standards | "Web Services" (no GAMS standard found) | Home for engineering standards; the GAMS standard goes here | Yes |
+| AH | Avalon Help | "Benefits of Consistent Optimization Strategy with GAMS and the Lambda Policy Module" (also mentions CPLEX) | Product help describing intended optimization behavior; used for domain context and doc-drift checks | Yes |
+| AVR | Avalon Redispatch | "Release Planning", "Release Planning – Detailed" | Release scope and timing; context for reviews | Yes |
+| FOT | Apps - Fleet | "Dahlberg SPC-PowerSouth CT7" | Site- or customer-specific page | **Pending** a data decision (Q9, Q16) |
+| AV | Avalon | "Avalon Status Updates" | Status reporting; mostly noise for the agent | No; read only when a user asks |
+
+The production service account (§8.2) gets read access to exactly the projects and the "Yes" spaces above. FOT is added only if Q16 allows it.
+
+**What this tells us (to confirm with SMEs in Phase 0)**
+
+- **Domain.** The names point to power-system scheduling: unit commitment, intra-hour dispatch, redispatch, contract energy scheduling, fleet operations and system lambda. Avalon looks like the product family that embeds the GAMS models. This drives the `power-scheduling-domain` skill (§7.2) and Appendix A.9, and the model catalog is organized by Avalon module (Q15).
+- **GO is where the history is.** It holds 93 of the 110 GAMS-mentioning issues, so it feeds the defect taxonomy, the historical evals and diagnosis searches.
+- **No specs or standards found by keyword.** The pages that mention GAMS are mostly release plans, status updates, help and tooling. None looks like a formulation spec or a GAMS coding standard. Specs may describe the math without naming GAMS.
+  - Phase 0 runs a broader Rovo search of these spaces for terms such as "formulation", "constraint", "objective function", "MIP", "CPLEX", "infeasible", "unit commitment" and "lambda".
+  - If no GAMS standard exists, the SME council drafts one in STD (Q12).
+- **Keyword counts undercount.** Solver issues often say "CPLEX", "MIP gap" or "infeasible" rather than "GAMS". The `gams` label convention (§8.3) fixes this going forward; Phase 0 back-labels past issues found by the broader search.
+- **Customer-specific content.** Pages like the FOT one may hold customer or site data. We decide whether the service account and Copilot may read them before adding FOT to the scope (Q9, Q16).
 
 ---
 
@@ -583,7 +633,8 @@ What the pin means for the agent:
 
 ### Internal sources: Confluence as the authoring home
 
-- **Live lookups:** long-form standards, specs, model docs and lessons learned stay in Confluence, where people already write them. Specs and model docs are fetched live for each task (§8).
+- **Live lookups:** long-form standards, specs, model docs and lessons learned stay in Confluence, where people already write them. Specs and model docs are fetched live for each task from the spaces in §8.5.
+- **Developer setup:** the "GAMS" page in DT is the starting point for the onboarding guide and local-install instructions (GAMS 53, `gams-tools`, VS Code setup).
 - **Snapshot for enforced rules:** the standards and checklist the agent *enforces* are copied into the `org-gams-standards` skill by a sync job at each pack release, and reviewed as a PR. Reviews are then reproducible, evals pin a known version, and code review can use them without Atlassian access.
 - **Review history:** past GitHub PR review comments and defect-type Jira issues are mined into a defect taxonomy. The taxonomy drives the checklist and the seeded-defect evals.
 
@@ -617,8 +668,8 @@ What the pin means for the agent:
 
 | Set | Construction | Graded by |
 |---|---|---|
-| **Seeded defects** | 10–20 base models × ~15 defect classes from Appendix A and the Phase 0 taxonomy | Automatic: right location and category. SMEs judge findings not in the ground truth. |
-| **Historical PRs** | 30–50 past GAMS PRs with human review comments and their Jira issues | Recall against human findings; SMEs rate extra findings as valid or invalid |
+| **Seeded defects** | 10–20 base models × ~15 defect classes from Appendix A (including the domain items in A.9, such as ramp limits across horizon boundaries or a wrong lambda sign) and the Phase 0 taxonomy | Automatic: right location and category. SMEs judge findings not in the ground truth. |
+| **Historical PRs** | 30–50 past GAMS PRs with human review comments and their Jira issues, drawn mostly from GO with some from UC and the intra-hour projects | Recall against human findings; SMEs rate extra findings as valid or invalid |
 | **Coding tasks** | 15–25 Jira-style tasks with acceptance criteria and a Confluence-style spec | Compiles; regression passes; acceptance criteria met; rubric review by an SME |
 | **Diagnosis tasks** | 10–20 broken runs with a known root cause, some with a matching past Jira issue | Root cause identified; fix verified by rerun; relevant past issue cited |
 | **Context tasks** | 10–15 tasks that need Jira or Confluence, including stale pages, conflicts, and pages with **planted instructions** | Traceability correct; citations accurate; conflicts flagged; planted instructions ignored |
@@ -662,12 +713,12 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 
 | Phase | Duration | Deliverables | Exit criteria |
 |---|---|---|---|
-| **0. Discovery and decisions** | ~2 weeks | Inventory of GAMS repos and entry points; **confirm the exact GAMS 53.x build, its bundled CPLEX version, and any teams on other releases**; review of the GAMS 51–53 release notes; OS mix and licenses; **turn on Copilot policies for pilot repos** (MCP restricted to approved servers, agents/skills/prompts, hooks, code review, cloud agent); **Atlassian requests** (production and eval service accounts, API-token auth for the Rovo MCP server, sandbox project and space, check whether Rovo is enabled); Jira/Confluence conventions (§8.3); interviews; defect taxonomy; data classification | Scope, version matrix, data policy, conventions and success metrics signed off; Copilot policies on for pilot repos; service accounts provisioned; answers to the open questions in §15 |
+| **0. Discovery and decisions** | ~2 weeks | Inventory of GAMS repos and entry points; **confirm the exact GAMS 53.x build, its bundled CPLEX version, and any teams on other releases**; review of the GAMS 51–53 release notes; OS mix and licenses; **turn on Copilot policies for pilot repos** (MCP restricted to approved servers, agents/skills/prompts, hooks, code review, cloud agent); **Atlassian requests** (production service account scoped to §8.5, eval service account, API-token auth for the Rovo MCP server, sandbox project and space); broader Rovo search for specs and standards, plus back-labeling with `gams` (§8.5); FOT data decision; Jira/Confluence conventions (§8.3); SME confirmation of the domain and the Avalon module ↔ model map; interviews; defect taxonomy; data classification | Scope, version matrix, data policy, conventions and success metrics signed off; Copilot policies on for pilot repos; service accounts provisioned; answers to the open questions in §15 |
 | **1. Pack MVP** | ~3 weeks | `copilot-instructions.md` + path instructions; skills `gams-language` and `cplex-via-gams` (built from the GAMS 53 docs), `gams-review`, `org-gams-standards` v0 (first Confluence snapshot); prompts `/gams-review`, `/gams-explain`; VS Code tasks and problem matcher; `.gams-agent.yaml` schema; pack sync to pilot repos; Atlassian MCP (read-only) configured for pilot users | Pilot users run local reviews in VS Code with Jira acceptance criteria pulled in; eval baseline v0 recorded |
 | **2. Tooling and context** | ~4 weeks | `gams-tools` MCP + CLI and sandbox image; five custom agents with tool allowlists; hooks; `/gams-implement`, `/gams-diagnose`, `/cplex-tune`, `/gams-test`, `/gams-doc`; skills `gams-testing`, `formulation-docs`, `atlassian-context` | Tool tests pass; measurable eval gain over v0 on coding, diagnosis and context sets |
 | **3. Evaluation harness** | Starts in Phase 1, then continuous | All six eval sets; Copilot CLI runner; code-review eval repo; sandbox Jira project and Confluence space; CI gating in this repo | GA targets measured on every release |
 | **4. GitHub review integration** | ~2–3 weeks | Reusable `gams-checks`; Copilot code review rulesets and repository MCP settings (`gams-tools` + Atlassian via the service account); review-specific instructions tuned under the character limit; shadow period on the eval repo + one pilot repo | Code-review precision ≥ target over at least 20 PRs; `gams-checks` required on pilot repos |
-| **5. Pilot → GA** | ~4–6 weeks pilot | Pilot with the cohort; weekly triage; misses become evals and skill updates; cloud agent with `copilot-setup-steps.yml` for low-risk work; Jira → Copilot assignment for low-risk tickets (if Rovo is enabled, Q6); VS Code agent plugin as an extra install route; onboarding guide; office hours | GA targets met; support and ownership model in place |
+| **5. Pilot → GA** | ~4–6 weeks pilot | Pilot with the cohort; weekly triage; misses become evals and skill updates; cloud agent with `copilot-setup-steps.yml` for low-risk work; Jira → Copilot assignment for low-risk tickets; VS Code agent plugin as an extra install route; onboarding guide; office hours | GA targets met; support and ownership model in place |
 
 ---
 
@@ -726,8 +777,9 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 | Q1 (part) | Production GAMS release | **GAMS 53.** The exact build is still open (below). |
 | Q4 | Copilot plan and policies | **Every Copilot feature this plan uses can be enabled** (§4, C3). |
 | Q5 | Custom agents per repo, or org-level in `.github-private` | **Per repo**, synced with the rest of the pack (§5.3). |
-| Q6 (part) | Jira and Confluence deployment | **Atlassian Cloud.** Whether Rovo is enabled is still open (below). |
+| Q6 | Jira and Confluence deployment | **Atlassian Cloud with Rovo enabled.** |
 | Q7 | Atlassian approvals | **The admin can approve the read-only service accounts.** Requesting them, plus API-token auth for the Rovo MCP server, is a Phase 0 action (§8.2, §12). |
+| Q8 (part) | Where GAMS content lives in Atlassian | **Jira GO, UC, IHP1, INTRA1, CES; Confluence DT, STD, AH, AVR, FOT, AV** (§8.5). Adopting the conventions is still open (below). |
 
 ### Still open (Phase 0)
 
@@ -739,15 +791,16 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 
 **Jira and Confluence**
 
-- **Q6:** Is Rovo enabled on our Atlassian site? The Copilot coding agent for Jira needs it (§8.2).
-- **Q8:** Which Jira projects and Confluence spaces hold GAMS work, specs, standards, runbooks and incident history? Can we adopt the conventions in §8.3?
+- **Q8:** Can we adopt the conventions in §8.3 across GO, UC, IHP1, INTRA1 and CES, including the `gams` label and keys in branch names? Where do formulation specs and runbooks live, if the broader search in §8.5 finds them?
+- **Q15:** Is the domain reading in §8.5 right (power-system scheduling, with Avalon as the product family)? Which GAMS model does each Avalon module use (unit commitment, intra-hour, redispatch, contract energy scheduling, Lambda Policy Module, fleet)?
+- **Q16:** May the service account and Copilot read customer- or site-specific pages, such as those in FOT? If so, under what data handling?
 
 **Data, tooling and success measures**
 
 - **Q9:** What data classification applies to model code, input data and Jira/Confluence content sent to Copilot?
 - **Q10:** What operating systems do SMEs and developers use, and do they all meet GAMS 53's platform requirements? Is GAMS 53 installed locally for all of them, and is Docker or WSL available?
 - **Q11:** Can GAMS be installed on GitHub-hosted runners (license and download access), or do we need self-hosted runners?
-- **Q12:** Do written internal GAMS standards exist, in Confluence or elsewhere, and who owns them?
+- **Q12:** The Rovo search found no GAMS coding standard (the STD hit is a Web Services page). Does one exist anywhere, or does the SME council draft one in STD? Who owns it?
 - **Q13:** Are there representative small datasets we can use freely, or must we build synthetic ones?
 - **Q14:** Who owns each success metric, and what are the final pilot → GA thresholds?
 
@@ -815,6 +868,18 @@ This is a starting point for the `gams-review` skill. The SME council validates 
 - [ ] The PR references its Jira issue, and every acceptance criterion is covered or explicitly deferred.
 - [ ] Spec or model-doc changes needed in Confluence are listed in the PR.
 
+### A.9 Power-system scheduling models (draft; the SME council validates in Phase 0)
+- [ ] Power balance holds in every period (and every area, if modeled), with consistent signs for generation, load, imports/exports and losses.
+- [ ] Commitment logic links the on/off, startup and shutdown variables correctly, including the first period's initial status from data.
+- [ ] Minimum up and down times, and startup/shutdown limits, honor each unit's initial status carried in from the previous horizon.
+- [ ] Ramp limits apply between consecutive intervals and across the horizon boundary, scaled to the interval length (e.g. 5- or 15-minute intra-hour vs. hourly).
+- [ ] MW ↔ MWh conversions use the interval duration consistently in energy, cost and contract terms.
+- [ ] Reserve requirements are coupled to the available headroom of committed units.
+- [ ] Piecewise-linear cost curves are convex where the formulation assumes it; otherwise SOS2 or binaries are used.
+- [ ] Outages, derates and must-run status come from data and show up in bounds or `$` conditions, not hard-coded values.
+- [ ] System lambda comes from the power-balance duals of a fixed-commitment LP re-solve. Its sign and units ($/MWh) are documented, and it is consistent with the dispatch.
+- [ ] Contract energy limits (minimum and maximum energy over a period) are enforced over the right time windows.
+
 ---
 
 ## Appendix B: Proposed repository layout (this repo)
@@ -834,7 +899,8 @@ Gams_agent/
 │   │   │   ├── gams-language/            # SKILL.md + references/*.md
 │   │   │   ├── cplex-via-gams/
 │   │   │   ├── gams-review/              # checklist.md, output-contract.md
-│   │   │   ├── org-gams-standards/       # snapshot of the Confluence standards space
+│   │   │   ├── org-gams-standards/       # snapshot of the GAMS standard in the STD space
+│   │   │   ├── power-scheduling-domain/  # UC, dispatch, redispatch, contracts, lambda; checklist A.9
 │   │   │   ├── gams-testing/
 │   │   │   ├── formulation-docs/
 │   │   │   └── atlassian-context/
