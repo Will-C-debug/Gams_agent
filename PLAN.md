@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Draft for review, revision 5 |
+| **Status** | Approved; implementation started (revision 6, see §16) |
 | **Date** | 2026-10-30 |
 | **Platform** | VS Code + GitHub Copilot, with Jira and Confluence as context sources |
 | **GAMS release** | GAMS 53 in production. The exact 53.x build and bundled CPLEX version are confirmed in Phase 0 (§9, Version pin). |
@@ -16,6 +16,8 @@
 > **Revision 4** records three confirmations: Jira and Confluence are **Atlassian Cloud**, a **read-only Atlassian service account** can be approved, and **every Copilot feature this plan uses can be enabled**. The Data Center fallback is gone, the service account is part of the core design (§8.2), and the resolved questions are listed in §15.
 >
 > **Revision 5** confirms that Rovo is enabled. It records the Jira projects and Confluence spaces that mention GAMS (§8.5), and adds the power-system scheduling domain those projects point to: a domain skill (§7.2) and domain checklist items (Appendix A.9).
+>
+> **Revision 6** records that the plan was approved and implementation started. §16 lists what was built and verified, and what still needs a real Copilot, Atlassian or licensed-GAMS environment. §9 now carries facts verified against real GAMS runs: the CPLEX version in GAMS 53.5.1, option precedence, and the change in MIP marginals in GAMS 54.
 
 ---
 
@@ -429,7 +431,8 @@ These become slash commands in Copilot Chat.
 - It enforces `resLim`, `threads`, wall-clock and output-size caps itself; the prompt is not relied on.
 - It writes only to a scratch directory.
 - It is never auto-approved, so the user confirms each run in VS Code.
-- Where Docker or WSL is available, runs go into the pinned sandbox image instead of the bare machine.
+- Every run, including compile, uses GAMS `execMode=2` (configurable), which blocks `$call`, `execute` and embedded code. *Implemented.*
+- Where Docker or WSL is available, runs go into the pinned sandbox image instead of the bare machine. *Not implemented yet:* the image exists (`sandbox/Dockerfile`), but `gams-tools` does not dispatch into it.
 
 **On CI and cloud-agent runners:**
 - Each run uses an ephemeral runner (or the sandbox container) behind the firewall / egress allowlist.
@@ -610,7 +613,18 @@ The production service account (§8.2) gets read access to exactly the projects 
 
 ### Version pin: GAMS 53
 
-Production runs **GAMS 53**. The 53 series started with major release 53.1.0 in February 2026, and GAMS 54 has shipped since then.
+Production runs **GAMS 53**. The 53 series started with major release 53.1.0 in February 2026; the latest 53.x build is **53.5.1**. GAMS 54 has shipped since then.
+
+**Verified during implementation** (GAMS 53.5.1 system files, plus runs on the 54.6.1 demo):
+
+| Fact | Evidence |
+|---|---|
+| GAMS 53.5.1 bundles **CPLEX 22.1.2**; 54.6.1 bundles CPLEX 22.2.0 | CPLEX libraries shipped in each release |
+| In GAMS 53, CPLEX `solvefinal` defaults to **1**, so MIP marginals (system lambda) are returned. In GAMS 54 it defaults to **0**, and a new `RequestMarginals` option appears; lambda read from `balance.m` comes back **NA** | `optcplex.def` / `optgams.def` of both releases; a unit commitment run on 54 returned NA for every hour |
+| Option precedence: command line < `option` statement < model attribute < solver option file | Runs comparing the effective CPLEX MIP gap |
+| `execMode=2` blocks `$call`, `execute` and embedded code (error 542) | GAMS run |
+| GAMS 53 defaults: `Filtered=on`, so `$load` silently drops bad keys; `ErrMsg=1`; `optCR=1e-4` | `optgams.def` |
+| `logic` is a reserved word (error 799 when used as an equation name) | GAMS run |
 
 What the pin means for the agent:
 
@@ -628,8 +642,9 @@ What the pin means for the agent:
   2. Rebuild the docs index from the GAMS 54 docs.
   3. Update the sandbox image and `copilot-setup-steps.yml`.
   4. Re-validate all approved option files.
-  5. Read the 54 release notes into the `gams-language` skill.
-  6. Rerun the full eval suite before the new pack version ships.
+  5. Decide how MIP marginals are obtained (`solvefinal 1` in option files, or `RequestMarginals`), and confirm the lambda regression cases still pass.
+  6. Read the 54 release notes into the `gams-language` skill.
+  7. Rerun the full eval suite before the new pack version ships.
 
 ### Internal sources: Confluence as the authoring home
 
@@ -785,7 +800,7 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 
 **GAMS and CPLEX**
 
-- **Q1:** Which exact 53.x.y build is in production, and which CPLEX library version does it bundle? Does any team run a different release, and is there a timeline for moving to GAMS 54?
+- **Q1:** Which exact 53.x.y build is in production? The latest is 53.5.1, which bundles CPLEX 22.1.2. Does any team run a different release, and is there a timeline for moving to GAMS 54? Moving to 54 changes MIP marginals (§9, Version pin).
 - **Q2:** Is CPLEX used only through GAMS, or also directly (OPL, docplex, CPLEX APIs)? Is direct use in scope for v1?
 - **Q3:** Do any teams use GAMSPy, the GAMS Python API, GAMS MIRO or GAMS Engine? If so, which versions, and do they line up with GAMS 53?
 
@@ -803,6 +818,34 @@ Durations are indicative for 1–2 engineers plus about 10–20% of the SME coun
 - **Q12:** The Rovo search found no GAMS coding standard (the STD hit is a Web Services page). Does one exist anywhere, or does the SME council draft one in STD? Who owns it?
 - **Q13:** Are there representative small datasets we can use freely, or must we build synthetic ones?
 - **Q14:** Who owns each success metric, and what are the final pilot → GA thresholds?
+
+---
+
+## 16. Implementation status (2026-10-30)
+
+Work so far covers Phase 1 and parts of Phases 2–4. Everything below is in this repository. The Phase 0 actions for admins and SMEs are in [docs/phase0-checklist.md](docs/phase0-checklist.md).
+
+### Built and verified here
+
+| Deliverable | Where | Verification |
+|---|---|---|
+| `gams-tools`: MCP server and CLI with the 12 tools in §7.6, plus hooks and the `check` CI gate | `mcp/gams-tools/` | 31 tests. Unit tests run on real GAMS/CPLEX output; integration tests run against an installed GAMS. MCP server exercised with an MCP client (lists tools, runs an allowlisted case, refuses others). Works with MCP Python SDK 1.x and 2.x, on Python 3.10 and 3.13 |
+| Customization pack: instructions, 8 skills, 5 agents, 8 prompts, hooks, VS Code config, config schema | `pack/` | `scripts/validate_pack.py` checks structure. Every CPLEX option named in the skills exists in GAMS 53.5.1. Facts are checked against GAMS runs (§9) |
+| CI and setup | `.github/` | Workflow YAML parses; the GAMS setup step and wheel install were reproduced locally |
+| Templates | `templates/` | The `.gams-agent.yaml` template parses with gams-tools |
+| Pack sync and Confluence snapshot | `sync/` | Copy logic and the storage-format conversion were tested locally |
+| Eval harness | `evals/` | 12 seeded defects, each verified to have a real effect (`effects.json`); graders tested |
+
+### Not yet verified (needs your environment)
+
+| Item | Why it isn't verified | Phase 0 action |
+|---|---|---|
+| Behavior in VS Code Copilot Chat, the cloud agent and Copilot code review | No Copilot environment here | Pilot user runs `/gams-review` on an eval workspace |
+| Built-in tool aliases and Atlassian tool names in agent frontmatter; hook file format | Preview features; GitHub docs were unreachable from here | Check against current VS Code / GitHub docs and the Atlassian server's tool list |
+| Atlassian Rovo MCP endpoint and API-token auth for the service accounts | No Atlassian access here | Atlassian admin |
+| Runs on licensed GAMS 53 | The demo license bundled with 53.5.1 has expired, so GAMS runs used the 54.6.1 demo | Rerun `pytest` (integration) and `evals/runner/verify_seeds.py` with GAMS 53 |
+| Sandbox image build; container dispatch from gams-tools | No Docker daemon here; dispatch not implemented | Build in CI; implement dispatch in Phase 2 |
+| Copilot CLI flags for automated eval runs | No Copilot CLI here | Confirm flags; until then, run evals by hand in VS Code |
 
 ---
 
