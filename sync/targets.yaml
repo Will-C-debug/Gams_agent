@@ -1,0 +1,5 @@
+# GAMS repositories that receive the gams-sme customization pack.
+# Fill in during Phase 0 (plan §12). Each target gets a pull request; nothing is pushed to main.
+targets: []
+#  - repo: <org>/<gams-repo>
+#    base: main

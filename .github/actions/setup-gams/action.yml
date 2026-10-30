@@ -1,0 +1,83 @@
+name: Set up GAMS and gams-tools
+description: Install a pinned GAMS release, write the license from a secret, and install gams-tools.
+
+inputs:
+  gams-version:
+    description: Exact GAMS version, e.g. 53.5.1
+    required: true
+  installer-url:
+    description: >
+      URL of the GAMS Linux installer (linux_x64_64_sfx.exe), ideally from an internal mirror.
+      If empty, the GAMS system shipped in the gamspy-base wheel of the same version is used
+      (confirm with your GAMS license terms that this is acceptable).
+    required: false
+    default: ""
+  license:
+    description: Contents of gamslice.txt (pass a secret)
+    required: true
+  gams-tools-ref:
+    description: Git ref of Will-C-debug/Gams_agent to install gams-tools from
+    required: false
+    default: main
+  gams-tools-path:
+    description: Local path to install gams-tools from instead of git (used by this repository's own CI)
+    required: false
+    default: ""
+
+outputs:
+  sysdir:
+    description: GAMS system directory
+    value: ${{ steps.install.outputs.sysdir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install GAMS
+      id: install
+      shell: bash
+      env:
+        GAMS_VERSION: ${{ inputs.gams-version }}
+        INSTALLER_URL: ${{ inputs.installer-url }}
+      run: |
+        set -euo pipefail
+        if [ -n "$INSTALLER_URL" ]; then
+          mkdir -p "$RUNNER_TEMP/gams" && cd "$RUNNER_TEMP/gams"
+          curl -fsSL -o installer.exe "$INSTALLER_URL"
+          chmod +x installer.exe && ./installer.exe > /dev/null
+          SYSDIR=$(ls -d "$RUNNER_TEMP"/gams/gams*_linux_x64_64_sfx | head -1)
+        else
+          python -m pip install --quiet --target "$RUNNER_TEMP/gamsbase" "gamspy-base==${GAMS_VERSION}"
+          SYSDIR="$RUNNER_TEMP/gamsbase/gamspy_base"
+        fi
+        echo "sysdir=$SYSDIR" >> "$GITHUB_OUTPUT"
+        echo "GAMS_SYSDIR=$SYSDIR" >> "$GITHUB_ENV"
+        echo "$SYSDIR" >> "$GITHUB_PATH"
+
+    - name: Write GAMS license
+      shell: bash
+      env:
+        GAMS_LICENSE: ${{ inputs.license }}
+      run: |
+        set -euo pipefail
+        if [ -z "$GAMS_LICENSE" ]; then
+          echo "::error::GAMS license secret is empty"; exit 1
+        fi
+        printf '%s\n' "$GAMS_LICENSE" > "$GAMS_SYSDIR/gamslice.txt"
+        lines=$(grep -c . "$GAMS_SYSDIR/gamslice.txt")
+        if [ "$lines" -lt 8 ]; then
+          echo "::error::GAMS 51+ requires the 8-line license format (found $lines lines)"; exit 1
+        fi
+
+    - name: Install gams-tools
+      shell: bash
+      env:
+        REF: ${{ inputs.gams-tools-ref }}
+        LOCAL: ${{ inputs.gams-tools-path }}
+      run: |
+        set -euo pipefail
+        if [ -n "$LOCAL" ]; then
+          python -m pip install --quiet "$LOCAL[mcp]"
+        else
+          python -m pip install --quiet "gams-tools[mcp] @ git+https://github.com/Will-C-debug/Gams_agent@${REF}#subdirectory=mcp/gams-tools"
+        fi
+        gams-tools --version

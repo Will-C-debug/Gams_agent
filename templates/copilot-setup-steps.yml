@@ -1,0 +1,35 @@
+# Copy to .github/workflows/copilot-setup-steps.yml in a GAMS repository (default branch).
+# Prepares the Copilot cloud agent's environment: GAMS 53 with license, plus gams-tools.
+# Only the job's steps, permissions and runs-on are honored by the cloud agent.
+# Store GAMS_LICENSE as a secret in the repository's "copilot" environment.
+# MCP servers for the cloud agent are configured separately in the repository's Copilot settings.
+name: Copilot setup steps
+
+on:
+  workflow_dispatch:
+  push:
+    paths: [.github/workflows/copilot-setup-steps.yml]
+  pull_request:
+    paths: [.github/workflows/copilot-setup-steps.yml]
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up GAMS and gams-tools
+        uses: Will-C-debug/Gams_agent/.github/actions/setup-gams@main
+        with:
+          gams-version: "53.5.1"
+          installer-url: ${{ vars.GAMS_INSTALLER_URL }}
+          license: ${{ secrets.GAMS_LICENSE }}
+
+      - name: Check the pinned GAMS version
+        run: gams-tools env

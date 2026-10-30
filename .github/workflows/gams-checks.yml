@@ -1,0 +1,74 @@
+# Reusable deterministic merge gate for GAMS repositories (no AI involved).
+# Called from each GAMS repository with templates/gams-checks-caller.yml.
+name: gams-checks
+
+on:
+  workflow_call:
+    inputs:
+      gams-version:
+        description: Exact GAMS version, e.g. 53.5.1
+        type: string
+        required: true
+      installer-url:
+        description: GAMS Linux installer URL (internal mirror); empty uses the gamspy-base wheel
+        type: string
+        required: false
+        default: ""
+      gams-tools-ref:
+        description: Git ref of Will-C-debug/Gams_agent for gams-tools
+        type: string
+        required: false
+        default: main
+      only-changed:
+        description: On pull requests, check only entry points affected by changed files
+        type: boolean
+        required: false
+        default: false
+    secrets:
+      GAMS_LICENSE:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up GAMS and gams-tools
+        uses: Will-C-debug/Gams_agent/.github/actions/setup-gams@main
+        with:
+          gams-version: ${{ inputs.gams-version }}
+          installer-url: ${{ inputs.installer-url }}
+          license: ${{ secrets.GAMS_LICENSE }}
+          gams-tools-ref: ${{ inputs.gams-tools-ref }}
+
+      - name: Run gams-tools check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          ONLY_CHANGED: ${{ inputs.only-changed }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ "$ONLY_CHANGED" = "true" ] && [ -n "${BASE_SHA:-}" ]; then
+            mapfile -t changed < <(git diff --name-only "$BASE_SHA"...HEAD)
+            if [ "${#changed[@]}" -gt 0 ]; then args=(--changed "${changed[@]}"); fi
+          fi
+          gams-tools check "${args[@]}"
+
+      - name: Upload GAMS listings and logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gams-runs
+          path: .gams-agent/runs/
+          retention-days: 7

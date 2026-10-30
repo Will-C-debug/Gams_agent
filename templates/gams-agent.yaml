@@ -1,0 +1,46 @@
+# .gams-agent.yaml - configuration for the gams-sme agent and gams-tools.
+# Copy to the root of a GAMS repository and adjust. Schema: .github/gams-agent.schema.json
+# (synced by the pack; VS Code validates this file with the YAML extension).
+
+gams:
+  version: "53"              # production major release; pin the exact build (e.g. "53.5.1") once confirmed
+  cplex_version: "22.1.2"    # CPLEX bundled with GAMS 53.5.1; confirm for your 53.x build
+  # sysdir: /opt/gams/gams53.5_linux_x64_64_sfx   # optional; otherwise GAMS_SYSDIR or gams on PATH
+  exec_mode: 2               # GAMS execMode for agent runs: 2 blocks $call, execute and embedded code
+
+limits:                      # caps for every agent-triggered run
+  reslim: 300                # seconds, passed to GAMS as resLim
+  threads: 4
+  wallclock: 900             # hard kill after this many seconds
+  max_output_chars: 20000    # cap on tool output returned to the agent
+
+entry_points:                # the only files gams-tools will compile or run
+  - path: models/uc/main.gms
+    defines: { horizon: "24" }
+  # - path: models/intrahour/main.gms
+
+test_cases:                  # the only runs the agent may start (gams_run)
+  - name: uc-small
+    entry: models/uc/main.gms
+    defines: { data: tests/data/uc_small.gdx, horizon: "8" }
+    baseline_gdx: tests/baseline/uc_small.gdx
+    tolerance: { rel: 1.0e-6, abs: 1.0e-6 }
+    symbols: [p, u, lambda, cost]
+    limits: { reslim: 60, threads: 2 }
+
+protected_paths:             # never read by the agent or passed to GAMS
+  - data/prod/**
+  - "**/*customer*"
+
+option_files:                # validated by gams-tools check
+  - models/uc/cplex.opt
+
+docs:
+  dirs: []                   # e.g. docs/gams53 - a local, version-pinned copy of documentation for docs_search
+
+atlassian:
+  jira_projects: [GO, UC, IHP1, INTRA1, CES]
+  issue_key_pattern: "(GO|UC|IHP1|INTRA1|CES)-[0-9]+"
+  confluence_spaces: [DT, STD, AH, AVR]   # add FOT only after the customer-data decision (plan Q16)
+  spec_labels: [model-spec]
+  runbook_labels: [runbook, lessons-learned]

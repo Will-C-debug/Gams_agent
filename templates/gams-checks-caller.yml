@@ -1,0 +1,25 @@
+# Copy to .github/workflows/gams-checks.yml in a GAMS repository.
+# Requires the repository (or organization) secret GAMS_LICENSE with the full 8-line license,
+# and optionally the variable GAMS_INSTALLER_URL pointing at an internal mirror of the GAMS installer.
+name: gams-checks
+
+on:
+  pull_request:
+    paths:
+      - "**/*.gms"
+      - "**/*.inc"
+      - "**/*.opt"
+      - "**/*.op[2-9]"
+      - ".gams-agent.yaml"
+      - "tests/**"
+  push:
+    branches: [main]
+
+jobs:
+  gams-checks:
+    uses: Will-C-debug/Gams_agent/.github/workflows/gams-checks.yml@main
+    with:
+      gams-version: "53.5.1"            # match production
+      installer-url: ${{ vars.GAMS_INSTALLER_URL }}
+    secrets:
+      GAMS_LICENSE: ${{ secrets.GAMS_LICENSE }}

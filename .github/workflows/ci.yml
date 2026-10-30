@@ -1,0 +1,61 @@
+# CI for this repository: gams-tools tests, pack validation, and (when a license is available)
+# integration tests against real GAMS 53.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install gams-tools
+        run: python -m pip install -e "mcp/gams-tools[mcp,test]"
+      - name: Unit tests (no GAMS needed)
+        working-directory: mcp/gams-tools
+        run: python -m pytest -q
+      - name: Validate the customization pack
+        run: python scripts/validate_pack.py
+
+  integration:
+    runs-on: ubuntu-latest
+    env:
+      HAS_LICENSE: ${{ secrets.GAMS_LICENSE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.HAS_LICENSE == 'true'
+      - uses: actions/setup-python@v5
+        if: env.HAS_LICENSE == 'true'
+        with:
+          python-version: "3.12"
+      - name: Set up GAMS 53 and gams-tools
+        if: env.HAS_LICENSE == 'true'
+        uses: ./.github/actions/setup-gams
+        with:
+          gams-version: "53.5.1"
+          installer-url: ${{ vars.GAMS_INSTALLER_URL }}
+          license: ${{ secrets.GAMS_LICENSE }}
+          gams-tools-path: mcp/gams-tools
+      - name: Integration tests against GAMS
+        if: env.HAS_LICENSE == 'true'
+        working-directory: mcp/gams-tools
+        env:
+          GAMS_TOOLS_TEST_VERSION: "53"
+        run: |
+          python -m pip install -q pytest
+          python -m pytest -q tests/test_integration.py
+      - name: Skip notice
+        if: env.HAS_LICENSE != 'true'
+        run: echo "::notice::GAMS_LICENSE secret not set; integration tests skipped."
